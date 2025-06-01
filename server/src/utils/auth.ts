@@ -6,8 +6,12 @@ import type { Env } from "..";
 
 dotenv.config();
 
-const getJWTSecret = () => {
-  return process.env.JWT_SECRET as string;
+const getJWTSecret = (c: Context<{ Bindings: Env }>) => {
+  const secret = c.env?.JWT_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET is required");
+  }
+  return secret;
 };
 
 export interface JWTPayload {
@@ -15,7 +19,9 @@ export interface JWTPayload {
   roleId?: number;
 }
 
-export const getUserIdFromToken = (c: Context): string | null => {
+export const getUserIdFromToken = (
+  c: Context<{ Bindings: Env }>
+): string | null => {
   try {
     let token = c.req.header("Authorization")?.split(" ")[1];
 
@@ -32,7 +38,7 @@ export const getUserIdFromToken = (c: Context): string | null => {
 
     if (!token) return null;
 
-    const decoded = jwt.verify(token, getJWTSecret()) as JWTPayload;
+    const decoded = jwt.verify(token, getJWTSecret(c)) as JWTPayload;
     console.log("Token decoded successfully:", { userId: decoded?.userId });
     return decoded?.userId || null;
   } catch (error) {
@@ -41,7 +47,9 @@ export const getUserIdFromToken = (c: Context): string | null => {
   }
 };
 
-export const getTokenPayload = (c: Context): JWTPayload | null => {
+export const getTokenPayload = (
+  c: Context<{ Bindings: Env }>
+): JWTPayload | null => {
   try {
     let token = c.req.header("Authorization")?.split(" ")[1];
 
@@ -51,7 +59,7 @@ export const getTokenPayload = (c: Context): JWTPayload | null => {
 
     if (!token) return null;
 
-    const decoded = jwt.verify(token, getJWTSecret()) as JWTPayload;
+    const decoded = jwt.verify(token, getJWTSecret(c)) as JWTPayload;
     return decoded;
   } catch (error) {
     return null;

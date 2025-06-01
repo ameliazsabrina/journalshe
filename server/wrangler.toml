@@ -1,0 +1,11 @@
+name = "journalshe-server"
+main = "src/index.ts"
+compatibility_date = "2025-02-13"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+CLIENT_URL = "http://localhost:3000"
+SUPABASE_URL = "https://fdigdwsrqrdzpwlnylog.supabase.co"
+
+# Secrets are set via: npx wrangler secret put <SECRET_NAME>
+# JWT_SECRET and SUPABASE_SERVICE_ROLE_KEY are configured as secrets 
