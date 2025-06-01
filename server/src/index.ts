@@ -12,6 +12,7 @@ import teacher from "./route/teacher";
 
 export type Env = {
   CLIENT_URL: string;
+  JWT_SECRET: string;
   OPENAI_API_KEY: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;

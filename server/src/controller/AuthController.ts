@@ -6,8 +6,12 @@ import * as jwt from "jsonwebtoken";
 
 import type { Env } from "..";
 
-const getJWTSecret = () => {
-  return process.env.JWT_SECRET as string;
+const getJWTSecret = (c: Context<{ Bindings: Env }>) => {
+  const secret = c.env?.JWT_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET is required");
+  }
+  return secret;
 };
 
 interface RegisterRequest {
@@ -337,7 +341,7 @@ export const login = async (c: Context<{ Bindings: Env }>) => {
       roleId: user.roleId,
     };
 
-    const token = jwt.sign(payload, getJWTSecret() as string, {
+    const token = jwt.sign(payload, getJWTSecret(c), {
       expiresIn: "7d",
     });
 
