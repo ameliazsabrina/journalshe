@@ -63,7 +63,7 @@ export default function Navbar() {
                   className="ml-4"
                   onClick={() => router.push("/admin/login")}
                 >
-                  I am Admin
+                  Register a School
                 </Button>
               </>
             ) : (
