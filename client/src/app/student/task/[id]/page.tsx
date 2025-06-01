@@ -80,6 +80,13 @@ export default async function StudentTaskDetailPage({
     studentId: string
   ) => {
     try {
+      console.log("Submitting assignment with data:", {
+        content: content?.substring(0, 50) + "...",
+        assignmentId,
+        studentId,
+        contentLength: content?.length,
+      });
+
       const response = await submissionAPI.create({
         content,
         assignmentId: assignmentId,
@@ -112,6 +119,8 @@ export default async function StudentTaskDetailPage({
       try {
         const currentStudent = await fetchCurrentStudent();
 
+        console.log("Current student response:", currentStudent);
+
         if (!currentStudent) {
           router.push("/student/login");
           return;
@@ -119,6 +128,13 @@ export default async function StudentTaskDetailPage({
 
         setUser(currentStudent.user);
         setStudentId(currentStudent.id);
+
+        console.log(
+          "Student ID set to:",
+          currentStudent.id,
+          "Type:",
+          typeof currentStudent.id
+        );
 
         const assignmentData = await fetchAssignment(assignmentId);
 

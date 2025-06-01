@@ -230,8 +230,15 @@ export const submissionAPI = {
   create: async (data: {
     assignmentId: string;
     content: string;
-    studentId?: string;
+    studentId: string;
   }) => {
+    console.log("submissionAPI.create called with:", {
+      assignmentId: data.assignmentId,
+      content: data.content?.substring(0, 50) + "...",
+      studentId: data.studentId,
+      contentLength: data.content?.length,
+    });
+
     const response = await api.post("/api/submissions", data);
     return response.data;
   },

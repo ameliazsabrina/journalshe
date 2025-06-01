@@ -12,11 +12,27 @@ export const createSubmission = async (c: Context<{ Bindings: Env }>) => {
     const { content, assignmentId, studentId } = await c.req.json();
     const userId = getUserIdFromToken(c);
 
+    console.log("createSubmission received data:", {
+      content: content ? `${content.substring(0, 50)}...` : content,
+      assignmentId,
+      studentId,
+      userId,
+      contentType: typeof content,
+      assignmentIdType: typeof assignmentId,
+      studentIdType: typeof studentId,
+      contentLength: content?.length,
+    });
+
     if (!userId) {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
     if (!content || !assignmentId || !studentId) {
+      console.log("Validation failed:", {
+        hasContent: !!content,
+        hasAssignmentId: !!assignmentId,
+        hasStudentId: !!studentId,
+      });
       return c.json(
         { error: "Content, assignmentId, and studentId are required" },
         400
