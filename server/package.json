@@ -1,0 +1,27 @@
+{
+  "name": "server-journalshe",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.7.11",
+    "jsonwebtoken": "^9.0.2",
+    "openai": "^4.103.0",
+    "@supabase/supabase-js": "^2.49.7",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.15.21",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "pkm-journalshe",
+  "version": "1.0.0",
+  "description": "PKM Journalshe",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && npm run dev",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "cd client && npm run build",
+    "build:server": "cd server && npm run build",
+    "start": "concurrently \"npm run start:client\" \"npm run start:server\"",
+    "start:client": "cd client && npm run start",
+    "start:server": "cd server && npm run start",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "clean": "rm -rf client/node_modules server/node_modules client/.next server/dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  },
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}
