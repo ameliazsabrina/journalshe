@@ -6,13 +6,14 @@ import {
   getStreakStats,
   getLoginHistory,
 } from "../controller/LoginStreakController";
+import { requireAuth } from "../middleware/requireAuth";
 
 const router = new Hono();
 
-router.post("/record", recordLogin);
-router.get("/my-streak", getMyStreak);
-router.get("/leaderboard/:classId", getStreakLeaderboard);
-router.get("/stats", getStreakStats);
-router.get("/history", getLoginHistory);
+router.post("/record", requireAuth, recordLogin);
+router.get("/my-streak", requireAuth, getMyStreak);
+router.get("/leaderboard/:classId", requireAuth, getStreakLeaderboard);
+router.get("/stats", requireAuth, getStreakStats);
+router.get("/history", requireAuth, getLoginHistory);
 
 export default router;

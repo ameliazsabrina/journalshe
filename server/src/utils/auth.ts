@@ -31,12 +31,18 @@ export const getUserIdFromToken = (
 
     console.log("Token extraction debug:", {
       hasAuthHeader: !!c.req.header("Authorization"),
+      authHeaderValue: c.req.header("Authorization")?.substring(0, 20) + "...",
       hasCookie: !!getCookie(c, "token"),
+      cookieValue: getCookie(c, "token")?.substring(0, 20) + "...",
       tokenFound: !!token,
       tokenLength: token?.length || 0,
+      allHeaders: Object.fromEntries(c.req.raw.headers.entries()),
     });
 
-    if (!token) return null;
+    if (!token) {
+      console.log("No token found in Authorization header or cookie");
+      return null;
+    }
 
     const decoded = jwt.verify(token, getJWTSecret(c)) as JWTPayload;
     console.log("Token decoded successfully:", { userId: decoded?.userId });

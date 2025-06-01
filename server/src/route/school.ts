@@ -5,12 +5,14 @@ import {
   listSchools,
   listClasses,
 } from "../controller/SchoolController";
+import { requireAuth } from "../middleware/requireAuth";
+import { requireAdmin } from "../middleware/requireAdmin";
 
 const router = new Hono();
 
-router.post("/school", createSchool);
-router.post("/class", createClass);
-router.get("/school", listSchools);
-router.get("/class", listClasses);
+router.post("/school", requireAdmin, createSchool);
+router.post("/class", requireAdmin, createClass);
+router.get("/school", requireAuth, listSchools);
+router.get("/class", requireAuth, listClasses);
 
 export default router;

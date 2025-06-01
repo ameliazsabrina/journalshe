@@ -8,15 +8,16 @@ import {
   updateAssignment,
   deleteAssignment,
 } from "../controller/AssignmentController";
+import { requireAuth, requireTeacher } from "../middleware/requireAuth";
 
 const router = new Hono();
 
-router.post("/", createAssignment);
-router.get("/class/:classId", getAssignmentsByClass);
-router.get("/:assignmentId/details", getAssignmentWithSubmissions);
-router.get("/:assignmentId", getAssignmentById);
-router.put("/:assignmentId", updateAssignment);
-router.delete("/:assignmentId", deleteAssignment);
-router.get("/teacher/my-assignments", getAssignmentsByTeacher);
+router.post("/", requireTeacher, createAssignment);
+router.get("/class/:classId", requireAuth, getAssignmentsByClass);
+router.get("/:assignmentId/details", requireAuth, getAssignmentWithSubmissions);
+router.get("/:assignmentId", requireAuth, getAssignmentById);
+router.put("/:assignmentId", requireTeacher, updateAssignment);
+router.delete("/:assignmentId", requireTeacher, deleteAssignment);
+router.get("/teacher/my-assignments", requireTeacher, getAssignmentsByTeacher);
 
 export default router;

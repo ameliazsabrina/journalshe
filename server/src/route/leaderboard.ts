@@ -5,12 +5,13 @@ import {
   updateStudentPoints,
   getCombinedLeaderboard,
 } from "../controller/LeaderboardController";
+import { requireAuth } from "../middleware/requireAuth";
 
 const router = new Hono();
 
-router.get("/class/:classId", getClassLeaderboard);
-router.get("/my-ranking", getMyRanking);
-router.post("/update-points", updateStudentPoints);
-router.get("/combined/:classId", getCombinedLeaderboard);
+router.get("/class/:classId", requireAuth, getClassLeaderboard);
+router.get("/my-ranking", requireAuth, getMyRanking);
+router.post("/update-points", requireAuth, updateStudentPoints);
+router.get("/combined/:classId", requireAuth, getCombinedLeaderboard);
 
 export default router;
