@@ -1,7 +1,8 @@
 {
   "name": "server-journalshe",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "build": "tsc"
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250601.0",

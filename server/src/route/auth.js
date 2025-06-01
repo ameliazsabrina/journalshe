@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var hono_1 = require("hono");
+var AuthController_1 = require("../controller/AuthController");
+var router = new hono_1.Hono();
+router.post("/register/student", AuthController_1.registerStudent);
+router.post("/register/teacher", AuthController_1.registerTeacher);
+router.post("/register/admin", AuthController_1.registerAdmin);
+router.post("/login", AuthController_1.login);
+router.get("/profile", AuthController_1.profile);
+router.post("/logout", AuthController_1.logout);
+exports.default = router;

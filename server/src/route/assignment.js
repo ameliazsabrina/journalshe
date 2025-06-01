@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var hono_1 = require("hono");
+var AssignmentController_1 = require("../controller/AssignmentController");
+var router = new hono_1.Hono();
+router.post("/", AssignmentController_1.createAssignment);
+router.get("/class/:classId", AssignmentController_1.getAssignmentsByClass);
+router.get("/:assignmentId/details", AssignmentController_1.getAssignmentWithSubmissions);
+router.get("/:assignmentId", AssignmentController_1.getAssignmentById);
+router.put("/:assignmentId", AssignmentController_1.updateAssignment);
+router.delete("/:assignmentId", AssignmentController_1.deleteAssignment);
+router.get("/teacher/my-assignments", AssignmentController_1.getAssignmentsByTeacher);
+exports.default = router;

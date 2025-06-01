@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var hono_1 = require("hono");
+var StudentController_1 = require("../controller/StudentController");
+var router = new hono_1.Hono();
+router.get("/me", StudentController_1.getCurrentStudent);
+router.get("/:studentId", StudentController_1.getStudentById);
+router.get("/:studentId/submissions", StudentController_1.getStudentSubmissions);
+router.get("/:studentId/streaks", StudentController_1.getStudentStreaks);
+exports.default = router;

@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var hono_1 = require("hono");
+var SchoolController_1 = require("../controller/SchoolController");
+var router = new hono_1.Hono();
+router.post("/school", SchoolController_1.createSchool);
+router.post("/class", SchoolController_1.createClass);
+router.get("/school", SchoolController_1.listSchools);
+router.get("/class", SchoolController_1.listClasses);
+exports.default = router;

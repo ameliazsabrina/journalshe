@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var hono_1 = require("hono");
+var TeacherController_1 = require("../controller/TeacherController");
+var router = new hono_1.Hono();
+router.get("/me", TeacherController_1.getCurrentTeacher);
+router.get("/:teacherId", TeacherController_1.getTeacherById);
+router.get("/me/assignments", TeacherController_1.getTeacherAssignments);
+router.get("/assignments/:assignmentId", TeacherController_1.getAssignmentWithSubmissions);
+router.get("/me/stats", TeacherController_1.getTeacherStats);
+router.get("/me/classes", TeacherController_1.getCurrentTeacherClasses);
+router.get("/me/school-classes", TeacherController_1.getSchoolClasses);
+router.get("/:teacherId/classes", TeacherController_1.getTeacherClasses);
+router.put("/me/classes", TeacherController_1.editTeacherClass);
+router.delete("/me/classes/:classId", TeacherController_1.deleteTeacherClass);
+exports.default = router;
