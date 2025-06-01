@@ -382,6 +382,7 @@ export const login = async (c: Context<{ Bindings: Env }>) => {
 
     return c.json({
       message: "Login successful",
+      token: token,
       user: {
         id: user.id,
         username: user.username,

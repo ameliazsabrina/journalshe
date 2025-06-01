@@ -6,14 +6,26 @@ export const requireAuth = async (
   c: Context<{ Bindings: Env }>,
   next: Next
 ) => {
+  console.log("requireAuth middleware called");
+  console.log(
+    "Request headers:",
+    Object.fromEntries(c.req.raw.headers.entries())
+  );
+
   const payload = getTokenPayload(c);
 
   if (!payload) {
+    console.log("No valid token payload found");
     return c.json(
       { error: "Unauthorized: No token provided or invalid token" },
       401
     );
   }
+
+  console.log("Valid token payload:", {
+    userId: payload.userId,
+    roleId: payload.roleId,
+  });
 
   // Add user info to context for use in route handlers
   (c as any).userId = payload.userId;

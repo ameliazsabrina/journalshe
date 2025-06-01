@@ -4,7 +4,7 @@ compatibility_date = "2025-02-13"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-CLIENT_URL = "http://localhost:3000"
+CLIENT_URL = "https://journalshe-client.vercel.app"
 SUPABASE_URL = "https://fdigdwsrqrdzpwlnylog.supabase.co"
 
 # Secrets are set via: npx wrangler secret put <SECRET_NAME>

@@ -23,14 +23,26 @@ const app = new Hono<{ Bindings: Env }>();
 app.use(
   "*",
   cors({
-    origin: [
-      "https://journalshe-client.vercel.app",
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-    ].filter(Boolean),
+    origin: (origin) => {
+      const allowedOrigins = [
+        "https://journalshe-client.vercel.app",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+      ];
+
+      console.log("CORS check:", { origin, allowedOrigins });
+
+      if (!origin) return origin; // Allow requests with no origin
+      return allowedOrigins.includes(origin) ? origin : null;
+    },
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cookie",
+      "X-Requested-With",
+    ],
     exposeHeaders: ["Set-Cookie"],
   })
 );

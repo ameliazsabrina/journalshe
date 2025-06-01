@@ -7,12 +7,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import axios from "axios";
+import { authAPI } from "@/lib/api";
 
 export default function StudentLoginPage() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const [form, setForm] = useState({
     username: "",
@@ -40,28 +37,22 @@ export default function StudentLoginPage() {
     }
 
     try {
-      const res = await axios.post(
-        `${apiUrl}/api/auth/login`,
-        {
-          username: form.username,
-          password: form.password,
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      const result = await authAPI.login({
+        username: form.username,
+        password: form.password,
+      });
 
-      if (res.data.error) {
+      if (result.error) {
         toast({
           title: "Login Failed",
-          description: res.data.error,
+          description: result.error,
           variant: "destructive",
         });
         setLoading(false);
         return;
       }
 
-      if (res.data.user.roleId !== 1) {
+      if (result.user.roleId !== 1) {
         toast({
           title: "Access Denied",
           description: "Only students can access this area.",

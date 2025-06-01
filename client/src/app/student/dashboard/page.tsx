@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import StudentNavbar from "@/components/student/navbar";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import axios from "axios";
+import { studentAPI, assignmentAPI, loginStreakAPI } from "@/lib/api";
 
 interface StreakData {
   currentStreak: number;
@@ -48,132 +48,12 @@ export default function StudentDashboard() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const fetchCurrentStudent = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/students/me`,
-        {
-          withCredentials: true,
-        }
-      );
-
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching current student:", error);
-      throw error;
-    }
-  };
-
-  const fetchAssignment = async (classId: number) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/assignments/class/${classId}`,
-        {
-          withCredentials: true,
-        }
-      );
-
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching assignment:", error);
-      throw error;
-    }
-  };
-
-  const fetchSubmissions = async (studentId: string) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentId}/submissions`,
-        {
-          withCredentials: true,
-        }
-      );
-
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching submissions:", error);
-      throw error;
-    }
-  };
-
-  const fetchStreaks = async (studentId: string) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentId}/streaks`,
-        {
-          withCredentials: true,
-        }
-      );
-
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching streaks:", error);
-      throw error;
-    }
-  };
-
-  const recordLoginStreak = async () => {
-    try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/login-streak/record`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
-
-      if (response.data.bonusPoints > 0) {
-        toast({
-          title: "Streak Bonus! 🔥",
-          description: `You earned ${response.data.bonusPoints} bonus points for your ${response.data.currentStreak}-day streak!`,
-        });
-      }
-
-      return response.data;
-    } catch (error) {
-      console.error("Error recording login streak:", error);
-      return null;
-    }
-  };
-
-  const fetchStreakData = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/login-streak/my-streak`,
-        {
-          withCredentials: true,
-        }
-      );
-
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching streak data:", error);
-      throw error;
-    }
-  };
-
-  const fetchSubmissionHistory = async (studentId: string) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentId}/submissions`,
-        {
-          withCredentials: true,
-        }
-      );
-
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching submission history:", error);
-      throw error;
-    }
-  };
-
   const loadData = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const currentStudent = await fetchCurrentStudent();
+      const currentStudent = await studentAPI.getCurrentStudent();
 
       if (!currentStudent) {
         setIsAuthenticated(false);
@@ -184,7 +64,7 @@ export default function StudentDashboard() {
       setStudent(currentStudent);
       setStudentId(currentStudent.id);
 
-      await recordLoginStreak();
+      await loginStreakAPI.record();
 
       const [
         assignmentData,
@@ -192,10 +72,10 @@ export default function StudentDashboard() {
         streakDataResponse,
         submissionHistoryData,
       ] = await Promise.all([
-        fetchAssignment(currentStudent.classId),
-        fetchSubmissions(currentStudent.id),
-        fetchStreakData(),
-        fetchSubmissionHistory(currentStudent.id),
+        assignmentAPI.getByClass(currentStudent.classId),
+        studentAPI.getSubmissions(currentStudent.id),
+        loginStreakAPI.getMyStreak(),
+        studentAPI.getSubmissions(currentStudent.id),
       ]);
 
       setAssignments(assignmentData);
