@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import axios from "axios";
 
 export default function StudentLoginPage() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const [form, setForm] = useState({
     username: "",

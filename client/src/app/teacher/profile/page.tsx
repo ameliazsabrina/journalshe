@@ -47,7 +47,9 @@ interface UserProfile {
 }
 
 export default function TeacherProfilePage() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const { toast } = useToast();
   const [user, setUser] = useState<UserProfile | null>(null);

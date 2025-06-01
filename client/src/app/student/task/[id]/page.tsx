@@ -41,7 +41,9 @@ export default async function StudentTaskDetailPage({
 }) {
   const resolvedParams = await params;
   const assignmentId = resolvedParams.id;
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const [journalText, setJournalText] = useState("");
   const [submissionResult, setSubmissionResult] = useState<any>(null);

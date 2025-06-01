@@ -26,7 +26,9 @@ import {
 import axios from "axios";
 
 export default function AdminNavbar() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);

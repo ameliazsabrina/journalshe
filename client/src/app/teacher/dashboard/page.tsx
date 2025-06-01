@@ -67,7 +67,9 @@ interface TeacherStats {
 }
 
 export default function TeacherDashboardPage() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [teacher, setTeacher] = useState<Teacher | null>(null);

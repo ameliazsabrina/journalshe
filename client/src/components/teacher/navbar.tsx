@@ -18,7 +18,9 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 
 export default function TeacherNavbar({ username }: { username: string }) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const apiUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const initials = username
     .split(" ")

@@ -27,7 +27,9 @@ export const getSessionToken = async () => {
 
 export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const token = await getSessionToken();
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://journalshe-server.azakiyasabrina.workers.dev";
 
   const defaultHeaders: HeadersInit = {
     "Content-Type": "application/json",
