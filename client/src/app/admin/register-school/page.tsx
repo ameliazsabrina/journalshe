@@ -81,28 +81,6 @@ export default function RegisterSchoolPage() {
   });
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
-      toast({
-        title: "Access Denied",
-        description: "You must be logged in as an admin",
-        variant: "destructive",
-      });
-      router.push("/admin/login");
-      return;
-    }
-
-    const parsedUser = JSON.parse(storedUser);
-    if (parsedUser.roleId !== 3 && parsedUser.roleId !== "3") {
-      toast({
-        title: "Access Denied",
-        description: "You must be logged in as an admin",
-        variant: "destructive",
-      });
-      router.push("/admin/login");
-      return;
-    }
-
     fetchSchools();
     fetchClasses();
   }, []);
