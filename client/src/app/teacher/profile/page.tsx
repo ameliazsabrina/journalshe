@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -28,6 +27,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import TeacherNavbar from "@/components/teacher/navbar";
+import { teacherAPI } from "@/lib/api";
 
 interface UserProfile {
   id: string;
@@ -47,9 +47,6 @@ interface UserProfile {
 }
 
 export default function TeacherProfilePage() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const { toast } = useToast();
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -62,12 +59,10 @@ export default function TeacherProfilePage() {
         setLoading(true);
         setError(null);
 
-        const response = await axios.get(`${apiUrl}/api/teachers/me`, {
-          withCredentials: true,
-        });
+        const response = await teacherAPI.getCurrentTeacher();
 
-        if (response.data?.user) {
-          setUser(response.data.user);
+        if (response?.user) {
+          setUser(response.user);
         } else {
           throw new Error("Invalid profile data");
         }
@@ -97,7 +92,7 @@ export default function TeacherProfilePage() {
     };
 
     fetchProfile();
-  }, [router, toast, apiUrl]);
+  }, [router, toast]);
 
   const getInitials = (name: string) => {
     return name

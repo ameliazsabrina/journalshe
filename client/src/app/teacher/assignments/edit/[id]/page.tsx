@@ -4,7 +4,6 @@ import type React from "react";
 import { Suspense } from "react";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { useRouter, useParams } from "next/navigation";
 import {
   Card,
@@ -45,11 +44,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { teacherAPI, assignmentAPI } from "@/lib/api";
 
 function EditAssignmentPageContent() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const params = useParams();
   const assignmentId = params.id as string;
@@ -74,10 +71,7 @@ function EditAssignmentPageContent() {
   useEffect(() => {
     const fetchTeacher = async () => {
       try {
-        const response = await axios.get(`${apiUrl}/api/teachers/me`, {
-          withCredentials: true,
-        });
-        const data = response.data;
+        const data = await teacherAPI.getCurrentTeacher();
 
         if (!data.user?.id) {
           toast({
@@ -113,7 +107,7 @@ function EditAssignmentPageContent() {
     };
 
     fetchTeacher();
-  }, [router, toast, apiUrl]);
+  }, [router, toast]);
 
   useEffect(() => {
     const fetchAssignment = async () => {
@@ -121,11 +115,7 @@ function EditAssignmentPageContent() {
 
       setFetchingAssignment(true);
       try {
-        const response = await axios.get(
-          `${apiUrl}/api/assignments/${assignmentId}`,
-          { withCredentials: true }
-        );
-        const assignment = response.data;
+        const assignment = await assignmentAPI.getById(assignmentId);
 
         setTitle(assignment.title);
         setDescription(assignment.description || "");
@@ -149,7 +139,7 @@ function EditAssignmentPageContent() {
     };
 
     fetchAssignment();
-  }, [assignmentId, router, toast, apiUrl]);
+  }, [assignmentId, router, toast]);
 
   const validateForm = () => {
     const errors: { title?: string; dueDate?: string } = {};
@@ -200,46 +190,33 @@ function EditAssignmentPageContent() {
       let classIdsToSend: number[] = [];
 
       if (typeof selectedClassId === "string" && selectedClassId === "all") {
-        const response = await axios.get(`${apiUrl}/api/teachers/me/classes`, {
-          withCredentials: true,
-        });
-        classIdsToSend = response.data.map((cls: any) => cls.id);
+        const classes = await teacherAPI.getTeacherClasses(teacherId!);
+        classIdsToSend = classes.map((cls: any) => cls.id);
       } else if (selectedClassId && Array.isArray(selectedClassId)) {
         classIdsToSend = selectedClassId;
       } else if (selectedClassId && typeof selectedClassId === "number") {
         classIdsToSend = [selectedClassId];
       } else {
-        // Default to all classes if none selected
-        const response = await axios.get(`${apiUrl}/api/teachers/me/classes`, {
-          withCredentials: true,
-        });
-        classIdsToSend = response.data.map((cls: any) => cls.id);
+        const classes = await teacherAPI.getTeacherClasses(teacherId!);
+        classIdsToSend = classes.map((cls: any) => cls.id);
       }
 
-      await axios.put(
-        `${apiUrl}/api/assignments/${assignmentId}`,
-        {
-          title,
-          description: description.trim() || null,
-          dueDate,
-          classIds: classIdsToSend,
-        },
-        { withCredentials: true }
-      );
+      console.log("Updating assignment with classIds:", classIdsToSend);
 
-      toast({
-        title: "Assignment updated!",
-        description: "Your assignment has been updated successfully.",
+      const response = await assignmentAPI.update(assignmentId, {
+        title,
+        description: description.trim() || "",
+        dueDate: dueDate!.toISOString(),
       });
 
+      console.log("Assignment updated:", response);
       setShowSuccessDialog(true);
     } catch (error: any) {
       console.error("Error updating assignment:", error);
       toast({
         title: "Failed to update assignment",
         description:
-          error.response?.data?.error ||
-          "Something went wrong. Please try again.",
+          error.response?.data?.error || "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -248,12 +225,10 @@ function EditAssignmentPageContent() {
   };
 
   const handleReset = () => {
-    if (assignmentId) {
-      toast({
-        title: "Changes reset",
-        description: "Form has been reset to original values.",
-      });
-    }
+    setTitle("");
+    setDescription("");
+    setDueDate(undefined);
+    setSelectedClassId(null);
     setFormErrors({});
   };
 
@@ -265,13 +240,31 @@ function EditAssignmentPageContent() {
     return (
       <div className="min-h-screen bg-background">
         <TeacherNavbar username={teacherName} />
-        <div
-          className="container mx-auto px-4 py-8 flex justify-center items-center"
-          style={{ height: "calc(100vh - 64px)" }}
-        >
-          <div className="flex flex-col items-center">
-            <Loader2 className="h-8 w-8 animate-spin mb-4" />
-            <p>Loading assignment...</p>
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-center mb-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push("/teacher/dashboard")}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Dashboard</span>
+              </Button>
+            </div>
+
+            <Card className="shadow-md">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <CardTitle>Loading Assignment...</CardTitle>
+                </div>
+                <CardDescription>
+                  Please wait while we fetch the assignment details
+                </CardDescription>
+              </CardHeader>
+            </Card>
           </div>
         </div>
       </div>
@@ -299,7 +292,7 @@ function EditAssignmentPageContent() {
             <CardHeader>
               <CardTitle>Edit Assignment</CardTitle>
               <CardDescription>
-                Update details for this assignment
+                Update the assignment details below
               </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
@@ -393,21 +386,9 @@ function EditAssignmentPageContent() {
                         Important Information
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {!selectedClassId ||
-                        (Array.isArray(selectedClassId) &&
-                          selectedClassId.length === 0)
-                          ? "This assignment will be available to all students in your assigned classes."
-                          : Array.isArray(selectedClassId)
-                          ? `This assignment will be available to students in ${
-                              selectedClassId.length
-                            } selected class${
-                              selectedClassId.length > 1 ? "es" : ""
-                            }.`
-                          : typeof selectedClassId === "string" &&
-                            selectedClassId === "all"
-                          ? "This assignment will be available to students in all your classes."
-                          : "This assignment will be available to students in the selected class."}{" "}
-                        Changes will be immediately visible to students.
+                        Changes to this assignment will be immediately visible
+                        to students. Make sure all details are correct before
+                        saving.
                       </p>
                     </div>
                   </div>
@@ -415,7 +396,7 @@ function EditAssignmentPageContent() {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button type="button" variant="outline" onClick={handleReset}>
-                  Reset Changes
+                  Reset Form
                 </Button>
                 <Button type="submit" disabled={loading}>
                   {loading ? (
@@ -431,6 +412,7 @@ function EditAssignmentPageContent() {
             </form>
           </Card>
 
+          {/* Success Dialog */}
           <AlertDialog
             open={showSuccessDialog}
             onOpenChange={setShowSuccessDialog}
@@ -444,12 +426,20 @@ function EditAssignmentPageContent() {
                   </AlertDialogTitle>
                 </div>
                 <AlertDialogDescription>
-                  Your assignment "{title}" has been updated successfully.
+                  Your assignment "{title}" has been updated and the changes are
+                  now visible to your students.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter>
+              <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  className="sm:w-full"
+                  onClick={() => setShowSuccessDialog(false)}
+                >
+                  Continue Editing
+                </Button>
                 <AlertDialogAction asChild>
-                  <Button className="w-full" onClick={handleViewAssignment}>
+                  <Button className="sm:w-full" onClick={handleViewAssignment}>
                     View Assignment
                   </Button>
                 </AlertDialogAction>
@@ -464,16 +454,7 @@ function EditAssignmentPageContent() {
 
 export default function EditAssignmentPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="flex flex-col items-center">
-            <Loader2 className="h-8 w-8 animate-spin mb-4" />
-            <p>Loading...</p>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<div>Loading...</div>}>
       <EditAssignmentPageContent />
     </Suspense>
   );

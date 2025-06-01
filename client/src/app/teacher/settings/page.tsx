@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -45,6 +44,7 @@ import {
 } from "@/components/ui/select";
 import Link from "next/link";
 import TeacherNavbar from "@/components/teacher/navbar";
+import { teacherAPI } from "@/lib/api";
 
 interface SchoolClass {
   id: number;
@@ -68,9 +68,6 @@ interface TeacherProfile {
 }
 
 export default function TeacherSettingsPage() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const { toast } = useToast();
   const router = useRouter();
   const [user, setUser] = useState<TeacherProfile | null>(null);
@@ -89,26 +86,19 @@ export default function TeacherSettingsPage() {
         setFetchingData(true);
         setError(null);
 
-        const profileResponse = await axios.get(`${apiUrl}/api/teachers/me`, {
-          withCredentials: true,
-        });
+        const profileResponse = await teacherAPI.getCurrentTeacher();
 
-        if (profileResponse.data?.user) {
-          setUser(profileResponse.data.user);
+        if (profileResponse?.user) {
+          setUser(profileResponse.user);
         } else {
           throw new Error("Invalid profile data");
         }
 
-        const classesResponse = await axios.get(
-          `${apiUrl}/api/teachers/me/school-classes`,
-          {
-            withCredentials: true,
-          }
-        );
+        const classesResponse = await teacherAPI.getSchoolClasses();
 
-        if (classesResponse.data) {
-          setAvailableClasses(classesResponse.data.classes || []);
-          setAssignedClassIds(classesResponse.data.assignedClassIds || []);
+        if (classesResponse) {
+          setAvailableClasses(classesResponse.classes || []);
+          setAssignedClassIds(classesResponse.assignedClassIds || []);
         }
       } catch (err: any) {
         console.error("Error fetching data:", err);
@@ -136,26 +126,22 @@ export default function TeacherSettingsPage() {
     };
 
     fetchData();
-  }, [router, toast, apiUrl]);
+  }, [router, toast]);
 
   const refreshData = async () => {
     try {
       const [profileResponse, classesResponse] = await Promise.all([
-        axios.get(`${apiUrl}/api/teachers/me`, {
-          withCredentials: true,
-        }),
-        axios.get(`${apiUrl}/api/teachers/me/school-classes`, {
-          withCredentials: true,
-        }),
+        teacherAPI.getCurrentTeacher(),
+        teacherAPI.getSchoolClasses(),
       ]);
 
-      if (profileResponse.data?.user) {
-        setUser(profileResponse.data.user);
+      if (profileResponse?.user) {
+        setUser(profileResponse.user);
       }
 
-      if (classesResponse.data) {
-        setAvailableClasses(classesResponse.data.classes || []);
-        setAssignedClassIds(classesResponse.data.assignedClassIds || []);
+      if (classesResponse) {
+        setAvailableClasses(classesResponse.classes || []);
+        setAssignedClassIds(classesResponse.assignedClassIds || []);
       }
     } catch (err: any) {
       console.error("Error refreshing data:", err);
@@ -169,15 +155,9 @@ export default function TeacherSettingsPage() {
     try {
       const newClassIds = [...assignedClassIds, parseInt(selectedNewClassId)];
 
-      await axios.put(
-        `${apiUrl}/api/teachers/me/classes`,
-        {
-          classIds: newClassIds,
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      await teacherAPI.editTeacherClass({
+        classIds: newClassIds,
+      });
 
       toast({
         title: "Class added",
@@ -203,9 +183,7 @@ export default function TeacherSettingsPage() {
 
     setLoading(true);
     try {
-      await axios.delete(`${apiUrl}/api/teachers/me/classes/${classId}`, {
-        withCredentials: true,
-      });
+      await teacherAPI.deleteTeacherClass(classId.toString());
 
       toast({
         title: "Class removed",

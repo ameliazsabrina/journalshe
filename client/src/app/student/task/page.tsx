@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
-import axios from "axios";
+import { studentAPI, assignmentAPI } from "@/lib/api";
 
 export default function StudentTasksPage() {
   const [studentId, setStudentId] = useState<string | null>(null);
@@ -51,57 +51,12 @@ export default function StudentTasksPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const fetchCurrentStudent = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/students/me`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching current student:", error);
-      throw error;
-    }
-  };
-
-  const fetchAssignments = async (classId: number) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/assignments/class/${classId}`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching assignments:", error);
-      throw error;
-    }
-  };
-
-  const fetchSubmissions = async (studentId: string) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/students/${studentId}/submissions`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching submissions:", error);
-      throw error;
-    }
-  };
-
   const loadData = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const currentStudent = await fetchCurrentStudent();
+      const currentStudent = await studentAPI.getCurrentStudent();
 
       if (!currentStudent) {
         setIsAuthenticated(false);
@@ -114,8 +69,8 @@ export default function StudentTasksPage() {
       setClassId(currentStudent.classId);
 
       const [assignmentsData, submissionsData] = await Promise.all([
-        fetchAssignments(currentStudent.classId),
-        fetchSubmissions(currentStudent.id),
+        assignmentAPI.getByClass(currentStudent.classId),
+        studentAPI.getSubmissions(currentStudent.id),
       ]);
 
       setAssignments(assignmentsData);

@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ArrowLeft, Loader2, Plus } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import axios from "axios";
+import { authAPI, schoolAPI } from "@/lib/api";
 import {
   Select,
   SelectContent,
@@ -30,9 +30,6 @@ interface Class {
 }
 
 export default function StudentSignupPage() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const [form, setForm] = useState({
     fullName: "",
     username: "",
@@ -65,8 +62,8 @@ export default function StudentSignupPage() {
   const fetchSchools = async () => {
     try {
       setIsLoadingSchools(true);
-      const response = await axios.get(`${apiUrl}/api/school/school`);
-      setSchools(response.data);
+      const data = await schoolAPI.listSchools();
+      setSchools(data);
     } catch (error) {
       console.error("Error fetching schools:", error);
       toast({
@@ -82,8 +79,8 @@ export default function StudentSignupPage() {
   const fetchClasses = async () => {
     try {
       setIsLoadingClasses(true);
-      const response = await axios.get(`${apiUrl}/api/school/class`);
-      setClasses(response.data);
+      const data = await schoolAPI.listClasses();
+      setClasses(data);
     } catch (error) {
       console.error("Error fetching classes:", error);
       toast({
@@ -159,18 +156,16 @@ export default function StudentSignupPage() {
     }
 
     try {
-      const response = await axios.post(`${apiUrl}/api/auth/register/student`, {
+      const data = await authAPI.registerStudent({
         fullName: form.fullName,
         username: form.username,
         email: form.email,
         password: form.password,
-        schoolId: parseInt(form.schoolId),
+        schoolId: form.schoolId,
         classIds: classIdsAsNumbers,
       });
 
-      const data = response.data;
-
-      if (response.status !== 201 || !data.message) {
+      if (!data.message) {
         throw new Error(data.error || "Registration failed");
       }
 

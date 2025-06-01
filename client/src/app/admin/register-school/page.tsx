@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import AdminNavbar from "@/components/admin/navbar";
-import axios from "axios";
+import { schoolAPI } from "@/lib/api";
 
 interface SchoolType {
   id: number;
@@ -60,9 +60,6 @@ interface ClassType {
 }
 
 export default function RegisterSchoolPage() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("register");
@@ -113,13 +110,8 @@ export default function RegisterSchoolPage() {
   const fetchSchools = async () => {
     try {
       setLoading((prev) => ({ ...prev, schools: true }));
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${apiUrl}/api/school/school`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setSchools(res.data);
+      const data = await schoolAPI.listSchools();
+      setSchools(data);
     } catch (error) {
       console.error("Error fetching schools:", error);
       toast({
@@ -135,13 +127,8 @@ export default function RegisterSchoolPage() {
   const fetchClasses = async () => {
     try {
       setLoading((prev) => ({ ...prev, classes: true }));
-      const token = localStorage.getItem("token");
-      const res = await axios.get(`${apiUrl}/api/school/class`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setClasses(res.data);
+      const data = await schoolAPI.listClasses();
+      setClasses(data);
     } catch (error) {
       console.error("Error fetching classes:", error);
       toast({
@@ -167,19 +154,10 @@ export default function RegisterSchoolPage() {
 
     try {
       setLoading((prev) => ({ ...prev, registeringSchool: true }));
-      const token = localStorage.getItem("token");
-      const response = await axios.post<SchoolType>(
-        `${apiUrl}/api/school/school`,
-        {
-          name: schoolName,
-          address: schoolAddress,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await schoolAPI.createSchool({
+        name: schoolName,
+        address: schoolAddress,
+      });
 
       toast({
         title: "Success",
@@ -214,19 +192,10 @@ export default function RegisterSchoolPage() {
 
     try {
       setLoading((prev) => ({ ...prev, registeringClass: true }));
-      const token = localStorage.getItem("token");
-      const res = await axios.post<ClassType>(
-        `${apiUrl}/api/school/class`,
-        {
-          name: className,
-          schoolId: parseInt(selectedSchoolId),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await schoolAPI.createClass({
+        name: className,
+        schoolId: selectedSchoolId,
+      });
 
       toast({
         title: "Success",

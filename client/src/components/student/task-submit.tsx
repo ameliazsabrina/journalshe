@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -27,6 +27,10 @@ import {
   Loader2,
   FileText,
   HelpCircle,
+  User,
+  RefreshCw,
+  Trophy,
+  Star,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -42,7 +46,7 @@ import {
 import Link from "next/link";
 import StudentNavbar from "@/components/student/navbar";
 import { format } from "date-fns";
-import axios from "axios";
+import { studentAPI, assignmentAPI, submissionAPI } from "@/lib/api";
 
 interface Assignment {
   id: string;
@@ -77,51 +81,6 @@ export default function TaskSubmit({ assignmentId }: TaskSubmitProps) {
   const [submissionResult, setSubmissionResult] = useState<any>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-  const fetchCurrentStudent = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/students/me`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching current student:", error);
-      throw error;
-    }
-  };
-
-  const fetchAssignment = async (assignmentId: string) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/assignments/${assignmentId}`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching assignment:", error);
-      throw error;
-    }
-  };
-
-  const getSubmissionById = async (submissionId: number) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/submissions/${submissionId}`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching submission:", error);
-      throw error;
-    }
-  };
-
   const pollForFeedback = useCallback(async (submissionId: number) => {
     const maxAttempts = 12;
     let attempts = 0;
@@ -129,7 +88,9 @@ export default function TaskSubmit({ assignmentId }: TaskSubmitProps) {
     const poll = async () => {
       try {
         attempts++;
-        const updatedSubmission = await getSubmissionById(submissionId);
+        const updatedSubmission = await submissionAPI.getById(
+          submissionId.toString()
+        );
 
         if (
           updatedSubmission.aiFeedback &&
@@ -158,7 +119,7 @@ export default function TaskSubmit({ assignmentId }: TaskSubmitProps) {
       setError(null);
 
       try {
-        const currentStudent = await fetchCurrentStudent();
+        const currentStudent = await studentAPI.getCurrentStudent();
 
         if (!currentStudent) {
           router.push("/student/login");
@@ -170,7 +131,7 @@ export default function TaskSubmit({ assignmentId }: TaskSubmitProps) {
           currentStudent.user?.fullName || currentStudent.user?.username
         );
 
-        const assignmentData = await fetchAssignment(assignmentId);
+        const assignmentData = await assignmentAPI.getById(assignmentId);
 
         if (!assignmentData) {
           setError(
@@ -240,17 +201,11 @@ export default function TaskSubmit({ assignmentId }: TaskSubmitProps) {
     setSubmitting(true);
 
     try {
-      const result = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/submissions`,
-        {
-          content: content,
-          assignmentId: assignmentId,
-          studentId,
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      const result = await submissionAPI.create({
+        content: content,
+        assignmentId: assignmentId,
+        studentId,
+      });
 
       setSubmissionResult(result.data.submission);
       setShowConfirmDialog(false);

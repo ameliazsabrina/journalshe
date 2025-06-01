@@ -7,12 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft } from "lucide-react";
-import axios from "axios";
+import { authAPI } from "@/lib/api";
 
 export default function TeacherLoginPage() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
 
   const [form, setForm] = useState({
@@ -40,20 +37,14 @@ export default function TeacherLoginPage() {
 
     try {
       console.log("Attempting login...");
-      const res = await axios.post(
-        `${apiUrl}/api/auth/login`,
-        {
-          username: form.username,
-          password: form.password,
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      const result = await authAPI.login({
+        username: form.username,
+        password: form.password,
+      });
 
-      console.log("Login response:", res.data);
+      console.log("Login response:", result);
 
-      if (res.data.user.roleId !== 2) {
+      if (result.user.roleId !== 2) {
         setLoading(false);
         toast({
           title: "Access Denied",
@@ -63,17 +54,11 @@ export default function TeacherLoginPage() {
         return;
       }
 
-      console.log("Cookies set, waiting for state update...");
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      console.log("Setting auth state with user data:", res.data.user);
-
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      console.log("Login successful, redirecting...");
 
       toast({
         title: "Logged in!",
-        description: `Welcome back, ${res.data.user.username}`,
+        description: `Welcome back, ${result.user.username}`,
         variant: "default",
       });
 

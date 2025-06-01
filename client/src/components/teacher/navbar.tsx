@@ -15,12 +15,9 @@ import { User, LogOut, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { authAPI } from "@/lib/api";
 
 export default function TeacherNavbar({ username }: { username: string }) {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const initials = username
     .split(" ")
@@ -29,11 +26,15 @@ export default function TeacherNavbar({ username }: { username: string }) {
     .toUpperCase()
     .slice(0, 2);
 
-  const handleLogout = () => {
-    axios.post(`${apiUrl}/api/auth/logout`, {
-      withCredentials: true,
-    });
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+      router.push("/");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      // Still redirect even if logout fails
+      router.push("/");
+    }
   };
 
   return (

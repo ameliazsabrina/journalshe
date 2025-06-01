@@ -23,12 +23,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import axios from "axios";
+import { authAPI } from "@/lib/api";
 
 export default function AdminNavbar() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -40,14 +37,17 @@ export default function AdminNavbar() {
     };
 
     window.addEventListener("scroll", handleScroll);
-    const fetchUser = async () => {
-      const res = await axios.get(`${apiUrl}/api/auth/profile`, {
-        withCredentials: true,
-      });
-      const user = res.data.user;
 
-      if (user?.fullName) {
-        setAdminName(user.fullName);
+    const fetchUser = async () => {
+      try {
+        const data = await authAPI.getProfile();
+        const user = data.user;
+
+        if (user?.fullName) {
+          setAdminName(user.fullName);
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
       }
     };
 
@@ -56,11 +56,15 @@ export default function AdminNavbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleLogout = () => {
-    axios.post(`${apiUrl}/api/auth/logout`, {
-      withCredentials: true,
-    });
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+      router.push("/");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      // Still redirect even if logout fails
+      router.push("/");
+    }
   };
 
   const isActive = (path: string) => {

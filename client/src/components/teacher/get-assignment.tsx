@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
@@ -22,6 +21,7 @@ import {
 import { CalendarIcon, AlertCircle, GraduationCap, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { teacherAPI, assignmentAPI } from "@/lib/api";
 
 interface Class {
   id: number;
@@ -63,19 +63,22 @@ export default function AssignmentsDashboard({
       try {
         setLoading(true);
 
-        const classesResponse = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/teachers/${teacherId}/classes`
-        );
-        setClasses(classesResponse.data);
+        const classesData = await teacherAPI.getTeacherClasses(teacherId);
+        setClasses(classesData);
 
-        const assignmentsUrl =
-          selectedClassId && selectedClassId !== "all"
-            ? `/api/assignments/teacher/${teacherId}?classId=${selectedClassId}`
-            : `/api/assignments/teacher/${teacherId}`;
+        const assignmentsData = await teacherAPI.getMyAssignments();
 
-        const responseAssignments = await axios.get(assignmentsUrl);
-        setAssignments(responseAssignments.data);
-        setFilteredAssignments(responseAssignments.data);
+        // Filter by class if selected
+        let filteredData = assignmentsData;
+        if (selectedClassId && selectedClassId !== "all") {
+          filteredData = assignmentsData.filter(
+            (assignment: Assignment) =>
+              assignment.classId?.toString() === selectedClassId
+          );
+        }
+
+        setAssignments(filteredData);
+        setFilteredAssignments(filteredData);
         setError(null);
       } catch (err: any) {
         console.error("Failed to load assignments:", err);
@@ -198,42 +201,40 @@ export default function AssignmentsDashboard({
                   </div>
                 </CardHeader>
                 <CardContent className="py-2">
-                  <CardDescription className="line-clamp-3 min-h-[4.5rem]">
+                  <CardDescription className="mb-3">
                     {assignment.description || "No description provided"}
                   </CardDescription>
-                </CardContent>
-                <CardFooter className="flex flex-col items-start pt-2 space-y-2">
-                  <div className="flex items-center text-sm text-muted-foreground w-full">
-                    <CalendarIcon className="mr-1 h-4 w-4" />
-                    <span>
-                      Due: {format(new Date(assignment.dueDate), "PPP")}
-                    </span>
-                  </div>
-
-                  {assignment.class && (
-                    <div className="flex items-center text-sm text-muted-foreground w-full">
-                      <GraduationCap className="mr-1 h-4 w-4" />
-                      <span>Class: {assignment.class.name}</span>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <CalendarIcon className="h-4 w-4" />
+                      Due:{" "}
+                      {format(new Date(assignment.dueDate), "MMM dd, yyyy")}
                     </div>
-                  )}
-
-                  <div className="flex justify-between w-full">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-600 hover:text-blue-800"
-                      onClick={() => handleViewDetails(assignment.id)}
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(assignment.id)}
-                    >
-                      Edit
-                    </Button>
+                    {assignment.class && (
+                      <div className="flex items-center gap-1">
+                        <GraduationCap className="h-4 w-4" />
+                        {assignment.class.name}
+                      </div>
+                    )}
                   </div>
+                </CardContent>
+                <CardFooter className="pt-2 flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetails(assignment.id)}
+                    className="flex-1"
+                  >
+                    View Details
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(assignment.id)}
+                    className="flex-1"
+                  >
+                    Edit
+                  </Button>
                 </CardFooter>
               </Card>
             );

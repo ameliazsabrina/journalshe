@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
@@ -25,6 +25,11 @@ import {
   Star,
   Calendar,
   Flame,
+  TrendingUp,
+  Users,
+  Target,
+  Crown,
+  Zap,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -35,7 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import axios from "axios";
+import { studentAPI, leaderboardAPI, loginStreakAPI } from "@/lib/api";
 
 interface User {
   username: string;
@@ -101,88 +106,13 @@ export default function LeaderboardPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const fetchCurrentStudent = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/students/me`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching current student:", error);
-      throw error;
-    }
-  };
-
-  const fetchLeaderboard = async (classId: number, period: string) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard/class/${classId}?period=${period}`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching leaderboard:", error);
-      throw error;
-    }
-  };
-
-  const fetchCombinedLeaderboard = async (classId: number, period: string) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard/combined/${classId}?period=${period}`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching combined leaderboard:", error);
-      throw error;
-    }
-  };
-
-  const fetchStreakLeaderboard = async (classId: number) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/login-streak/leaderboard/${classId}`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching streak leaderboard:", error);
-      throw error;
-    }
-  };
-
-  const fetchMyRanking = async (period: string) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard/my-ranking?period=${period}`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching my ranking:", error);
-      throw error;
-    }
-  };
-
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const currentStudent = await fetchCurrentStudent();
+        const currentStudent = await studentAPI.getCurrentStudent();
 
         if (!currentStudent) {
           router.push("/student/login");
@@ -223,10 +153,10 @@ export default function LeaderboardPage() {
     try {
       const [leaderboardData, combinedData, streakData, rankingData] =
         await Promise.all([
-          fetchLeaderboard(classId, selectedPeriod),
-          fetchCombinedLeaderboard(classId, selectedPeriod),
-          fetchStreakLeaderboard(classId),
-          fetchMyRanking(selectedPeriod),
+          leaderboardAPI.getClassLeaderboard(classId.toString()),
+          leaderboardAPI.getCombinedLeaderboard(classId.toString()),
+          loginStreakAPI.getStreakLeaderboard(classId.toString()),
+          leaderboardAPI.getMyRanking(),
         ]);
 
       setStudents(leaderboardData);
@@ -234,11 +164,11 @@ export default function LeaderboardPage() {
       setStreakStudents(streakData);
       setMyRanking(rankingData);
     } catch (err: any) {
-      console.error("Error loading leaderboard:", err);
+      console.error("Error loading leaderboard data:", err);
       setError("Failed to load leaderboard data");
       toast({
-        title: "Error loading leaderboard",
-        description: "Failed to load leaderboard data. Please try again.",
+        title: "Error",
+        description: "Failed to load leaderboard. Please try again.",
         variant: "destructive",
       });
     } finally {

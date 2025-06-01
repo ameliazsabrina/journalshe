@@ -7,13 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft } from "lucide-react";
-
-import axios from "axios";
+import { authAPI } from "@/lib/api";
 
 export default function AdminLoginPage() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const [form, setForm] = useState({
     username: "",
@@ -39,18 +35,12 @@ export default function AdminLoginPage() {
     }
 
     try {
-      const res = await axios.post(
-        `${apiUrl}/api/auth/login`,
-        {
-          username: form.username,
-          password: form.password,
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      const result = await authAPI.login({
+        username: form.username,
+        password: form.password,
+      });
 
-      if (res.data.user.roleId !== 3) {
+      if (result.user.roleId !== 3) {
         toast({
           title: "Access Denied",
           description: "Only admins can access this area.",
@@ -59,10 +49,6 @@ export default function AdminLoginPage() {
         setLoading(false);
         return;
       }
-
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-
-      localStorage.setItem("user", JSON.stringify(res.data.user));
 
       toast({
         title: "Success",

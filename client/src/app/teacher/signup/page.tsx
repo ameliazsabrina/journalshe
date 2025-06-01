@@ -16,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Plus, Loader2 } from "lucide-react";
 import Link from "next/link";
-import axios from "axios";
 import {
   Select,
   SelectContent,
@@ -24,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { authAPI, schoolAPI } from "@/lib/api";
 
 interface School {
   id: number;
@@ -38,9 +38,6 @@ interface Class {
 }
 
 export default function TeacherSignupPage() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const [form, setForm] = useState({
     fullName: "",
@@ -80,8 +77,8 @@ export default function TeacherSignupPage() {
   const fetchSchools = async () => {
     try {
       setIsLoadingSchools(true);
-      const response = await axios.get(`${apiUrl}/api/school/school`);
-      setSchools(response.data);
+      const data = await schoolAPI.listSchools();
+      setSchools(data);
     } catch (error) {
       console.error("Error fetching schools:", error);
       toast({
@@ -97,8 +94,8 @@ export default function TeacherSignupPage() {
   const fetchClasses = async () => {
     try {
       setIsLoadingClasses(true);
-      const response = await axios.get(`${apiUrl}/api/school/class`);
-      setClasses(response.data);
+      const data = await schoolAPI.listClasses();
+      setClasses(data);
     } catch (error) {
       console.error("Error fetching classes:", error);
       toast({
@@ -160,19 +157,16 @@ export default function TeacherSignupPage() {
     }
 
     try {
-      const response = await axios.post(`${apiUrl}/api/auth/register/teacher`, {
+      const data = await authAPI.registerTeacher({
         fullName: form.fullName,
         username: form.username,
         email: form.email,
         password: form.password,
-
-        schoolId: parseInt(form.schoolId),
+        schoolId: form.schoolId,
         classIds: validClassIds.map((id) => parseInt(id)),
       });
 
-      const data = response.data;
-
-      if (response.status !== 201) {
+      if (!data.message) {
         throw new Error(data.error || "Registration failed");
       }
 

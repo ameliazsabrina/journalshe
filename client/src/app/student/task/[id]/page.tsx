@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import axios from "axios";
+import { studentAPI, assignmentAPI, submissionAPI } from "@/lib/api";
 
 export default async function StudentTaskDetailPage({
   params,
@@ -41,9 +41,6 @@ export default async function StudentTaskDetailPage({
 }) {
   const resolvedParams = await params;
   const assignmentId = resolvedParams.id;
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const [journalText, setJournalText] = useState("");
   const [submissionResult, setSubmissionResult] = useState<any>(null);
@@ -59,10 +56,8 @@ export default async function StudentTaskDetailPage({
 
   const fetchCurrentStudent = async () => {
     try {
-      const response = await axios.get(`${apiUrl}/api/students/me`, {
-        withCredentials: true,
-      });
-      return response.data;
+      const response = await studentAPI.getCurrentStudent();
+      return response;
     } catch (error) {
       console.error("Error fetching current student:", error);
       throw error;
@@ -71,13 +66,8 @@ export default async function StudentTaskDetailPage({
 
   const fetchAssignment = async (assignmentId: string) => {
     try {
-      const response = await axios.get(
-        `${apiUrl}/api/assignments/${assignmentId}`,
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
+      const response = await assignmentAPI.getById(assignmentId);
+      return response;
     } catch (error) {
       console.error("Error fetching assignment:", error);
       throw error;
@@ -90,18 +80,12 @@ export default async function StudentTaskDetailPage({
     studentId: string
   ) => {
     try {
-      const response = await axios.post(
-        `${apiUrl}/api/submissions`,
-        {
-          content,
-          assignmentId: assignmentId,
-          studentId,
-        },
-        {
-          withCredentials: true,
-        }
-      );
-      return response.data;
+      const response = await submissionAPI.create({
+        content,
+        assignmentId: assignmentId,
+        studentId,
+      });
+      return response;
     } catch (error) {
       console.error("Error submitting assignment:", error);
       throw error;
@@ -110,14 +94,10 @@ export default async function StudentTaskDetailPage({
 
   const regenerateAIFeedback = async (submissionId: number) => {
     try {
-      const response = await axios.post(
-        `${apiUrl}/api/submissions/${submissionId}/regenerate-feedback`,
-        {},
-        {
-          withCredentials: true,
-        }
+      const response = await submissionAPI.regenerateAIFeedback(
+        submissionId.toString()
       );
-      return response.data;
+      return response;
     } catch (error) {
       console.error("Error regenerating AI feedback:", error);
       throw error;

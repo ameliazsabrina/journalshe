@@ -44,7 +44,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import axios from "axios";
+import { teacherAPI, assignmentAPI } from "@/lib/api";
 
 export default function CreateAssignmentPage() {
   const apiUrl =
@@ -72,10 +72,7 @@ export default function CreateAssignmentPage() {
   useEffect(() => {
     const fetchTeacher = async () => {
       try {
-        const response = await axios.get(`${apiUrl}/api/teachers/me`, {
-          withCredentials: true,
-        });
-        const data = response.data;
+        const data = await teacherAPI.getCurrentTeacher();
 
         if (!data.user?.id) {
           toast({
@@ -111,7 +108,7 @@ export default function CreateAssignmentPage() {
     };
 
     fetchTeacher();
-  }, [router, toast, apiUrl]);
+  }, [router, toast]);
 
   const validateForm = () => {
     const errors: { title?: string; dueDate?: string } = {};
@@ -162,39 +159,28 @@ export default function CreateAssignmentPage() {
       let classIdsToSend: number[] = [];
 
       if (typeof selectedClassId === "string" && selectedClassId === "all") {
-        const response = await axios.get(
-          `${apiUrl}/api/teachers/${teacherId}/classes`,
-          { withCredentials: true }
-        );
-        classIdsToSend = response.data.map((cls: any) => cls.id);
+        const classes = await teacherAPI.getTeacherClasses(teacherId);
+        classIdsToSend = classes.map((cls: any) => cls.id);
       } else if (selectedClassId && Array.isArray(selectedClassId)) {
         classIdsToSend = selectedClassId;
       } else if (selectedClassId && typeof selectedClassId === "number") {
         classIdsToSend = [selectedClassId];
       } else {
-        const response = await axios.get(
-          `${apiUrl}/api/teachers/${teacherId}/classes`,
-          { withCredentials: true }
-        );
-        classIdsToSend = response.data.map((cls: any) => cls.id);
+        const classes = await teacherAPI.getTeacherClasses(teacherId);
+        classIdsToSend = classes.map((cls: any) => cls.id);
       }
 
       console.log("Sending classIds:", classIdsToSend);
 
-      const response = await axios.post(
-        `${apiUrl}/api/assignments`,
-        {
-          title,
-          description: description.trim() || null,
-          dueDate,
-          teacherId,
-          classIds: classIdsToSend,
-        },
-        { withCredentials: true }
-      );
+      const response = await assignmentAPI.create({
+        title,
+        description: description.trim() || "",
+        dueDate: dueDate!.toISOString(),
+        classId: classIdsToSend[0], // For now, use the first class ID
+      });
 
-      console.log("Assignment created:", response.data);
-      setNewAssignmentId(response.data.id);
+      console.log("Assignment created:", response);
+      setNewAssignmentId(response.id);
       setShowSuccessDialog(true);
     } catch (error: any) {
       console.error("Error creating assignment:", error);

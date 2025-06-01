@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +24,6 @@ import {
   Bell,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useRouter } from "next/navigation";
 import {
   Sheet,
   SheetContent,
@@ -33,27 +32,25 @@ import {
   SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
-import axios from "axios";
+import { authAPI } from "@/lib/api";
 
 interface StudentNavbarProps {
   username: string;
 }
 
 export default function StudentNavbar({ username }: StudentNavbarProps) {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
-
   const [user, setUser] = useState<any>(null);
 
   const fetchUser = async () => {
-    const { data } = await axios.get(`${apiUrl}/api/auth/profile`, {
-      withCredentials: true,
-    });
-    setUser(data.user);
+    try {
+      const data = await authAPI.getProfile();
+      setUser(data.user);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
   };
 
   useEffect(() => {
@@ -76,9 +73,15 @@ export default function StudentNavbar({ username }: StudentNavbarProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleLogout = () => {
-    axios.post(`${apiUrl}/api/auth/logout`, {}, { withCredentials: true });
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+      router.push("/");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      // Still redirect even if logout fails
+      router.push("/");
+    }
   };
 
   const isActive = (path: string) => {

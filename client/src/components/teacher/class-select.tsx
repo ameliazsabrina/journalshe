@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { teacherAPI } from "@/lib/api";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,9 +25,6 @@ export default function ClassSelect({
   required = false,
   disabled = false,
 }: ClassSelectProps) {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,10 +33,8 @@ export default function ClassSelect({
     const fetchClasses = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${apiUrl}/api/teachers/me/classes`, {
-          withCredentials: true,
-        });
-        setClasses(response.data);
+        const data = await teacherAPI.getMyClasses();
+        setClasses(data);
         setError(null);
       } catch (err: any) {
         console.error("Error fetching classes:", err);
@@ -54,7 +49,7 @@ export default function ClassSelect({
     };
 
     fetchClasses();
-  }, [apiUrl]);
+  }, []);
 
   const getSelectedClassIds = (): number[] => {
     if (!selectedClassId) return [];

@@ -31,7 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import axios from "axios";
+import { teacherAPI } from "@/lib/api";
 
 interface Assignment {
   id: number;
@@ -67,9 +67,6 @@ interface TeacherStats {
 }
 
 export default function TeacherDashboardPage() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const router = useRouter();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [teacher, setTeacher] = useState<Teacher | null>(null);
@@ -84,26 +81,18 @@ export default function TeacherDashboardPage() {
       setError(null);
 
       try {
-        const teacherResponse = await axios.get(`${apiUrl}/api/teachers/me`, {
-          withCredentials: true,
-        });
-        setTeacher(teacherResponse.data.user || teacherResponse.data);
+        const teacherData = await teacherAPI.getCurrentTeacher();
+        setTeacher(teacherData.user || teacherData);
 
-        const assignmentsResponse = await axios.get(
-          `${apiUrl}/api/teachers/me/assignments`,
-          { withCredentials: true }
-        );
-        setAssignments(assignmentsResponse.data);
+        const assignmentsData = await teacherAPI.getMyAssignments();
+        setAssignments(assignmentsData);
 
-        const statsResponse = await axios.get(
-          `${apiUrl}/api/teachers/me/stats`,
-          { withCredentials: true }
-        );
-        setStats(statsResponse.data);
+        const statsData = await teacherAPI.getMyStats();
+        setStats(statsData);
 
         toast({
           title: "Dashboard loaded",
-          description: `Found ${assignmentsResponse.data.length} assignments`,
+          description: `Found ${assignmentsData.length} assignments`,
         });
       } catch (err: any) {
         console.error("Error fetching data:", err);

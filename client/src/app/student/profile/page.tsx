@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 import StudentNavbar from "@/components/student/navbar";
-import axios from "axios";
+import { studentAPI } from "@/lib/api";
 
 interface StudentProfile {
   id: string;
@@ -49,9 +49,6 @@ interface StudentProfile {
 }
 
 export default function StudentProfilePage() {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    "https://journalshe-server.azakiyasabrina.workers.dev";
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,9 +58,7 @@ export default function StudentProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const { data: student } = await axios.get(`${apiUrl}/api/students/me`, {
-          withCredentials: true,
-        });
+        const student = await studentAPI.getCurrentStudent();
 
         if (!student) {
           toast({
@@ -204,7 +199,6 @@ export default function StudentProfilePage() {
                 <span>Dashboard</span>
               </Button>
             </div>
-            <h1 className="text-2xl font-bold">Student Profile</h1>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -213,7 +207,7 @@ export default function StudentProfilePage() {
                 <CardHeader className="text-center">
                   <Avatar className="h-24 w-24 mx-auto">
                     <AvatarFallback className="text-xl">
-                      {getInitials(profile.user.username)}
+                      {getInitials(profile.user.fullName)}
                     </AvatarFallback>
                   </Avatar>
                   <CardTitle className="mt-4">
@@ -232,15 +226,11 @@ export default function StudentProfilePage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <School className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {profile.school?.name || "Not assigned"}
-                    </span>
+                    <span className="text-sm">{profile.school.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <BookOpen className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {profile.class?.name || "Not assigned"}
-                    </span>
+                    <span className="text-sm">{profile.class.name}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -248,8 +238,9 @@ export default function StudentProfilePage() {
 
             <div className="md:col-span-2">
               <Tabs defaultValue="details">
-                <TabsList className="grid w-full grid-cols-1">
-                  <TabsTrigger value="details">Profile</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="stats">Statistics</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="details" className="mt-4">
@@ -260,48 +251,20 @@ export default function StudentProfilePage() {
                     <CardContent className="space-y-6">
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                          School
+                          School & Class
                         </h3>
                         <div className="bg-muted/30 p-4 rounded-md">
-                          {profile.school ? (
-                            <div className="flex items-start gap-3">
-                              <Building className="h-5 w-5 text-primary mt-0.5" />
-                              <div>
-                                <h4 className="font-medium">
-                                  {profile.school.name}
-                                </h4>
-                              </div>
+                          <div className="flex items-start gap-3">
+                            <Building className="h-5 w-5 text-primary mt-0.5" />
+                            <div>
+                              <h4 className="font-medium">
+                                {profile.school.name}
+                              </h4>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Class: {profile.class.name}
+                              </p>
                             </div>
-                          ) : (
-                            <p className="text-muted-foreground">
-                              No school assigned
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                          Class Information
-                        </h3>
-                        <div className="bg-muted/30 p-4 rounded-md">
-                          {profile.class ? (
-                            <div className="flex items-start gap-3">
-                              <BookOpen className="h-5 w-5 text-primary mt-0.5" />
-                              <div>
-                                <h4 className="font-medium">
-                                  {profile.class.name}
-                                </h4>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  Level: {profile.classLevel}
-                                </p>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-muted-foreground">
-                              No class assigned
-                            </p>
-                          )}
+                          </div>
                         </div>
                       </div>
 
@@ -327,8 +290,79 @@ export default function StudentProfilePage() {
                                 {profile.user.email}
                               </p>
                             </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Full Name
+                              </p>
+                              <p className="font-medium">
+                                {profile.user.fullName}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Student ID
+                              </p>
+                              <p className="font-medium">{profile.id}</p>
+                            </div>
                           </div>
                         </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="stats" className="mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Your Statistics</CardTitle>
+                      <CardDescription>
+                        Track your progress and achievements
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="bg-primary/10 p-4 rounded-md">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Total Points
+                              </p>
+                              <p className="text-2xl font-bold text-primary">
+                                {profile.totalPoints}
+                              </p>
+                            </div>
+                            <div className="bg-primary/20 p-2 rounded-full">
+                              <BookOpen className="h-6 w-6 text-primary" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-emerald-50 dark:bg-emerald-950/50 p-4 rounded-md">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Login Streak
+                              </p>
+                              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                                {profile.streakDays} days
+                              </p>
+                            </div>
+                            <div className="bg-emerald-100 dark:bg-emerald-900/50 p-2 rounded-full">
+                              <User className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 p-4 bg-muted/30 rounded-md">
+                        <h3 className="font-medium mb-2">
+                          Achievement Summary
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          You've earned {profile.totalPoints} points and
+                          maintained a {profile.streakDays}-day login streak.
+                          Keep up the great work!
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
