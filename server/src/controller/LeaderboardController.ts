@@ -84,7 +84,7 @@ export const getClassLeaderboard = async (c: Context<{ Bindings: Env }>) => {
       query = query.gte("updated", dateFilter.toISOString());
     }
 
-    const { data: basicData, error: basicError } = await query.limit(200);
+    const { data: basicData, error: basicError } = await query;
 
     if (basicError) {
       console.error("Error with leaderboard query:", basicError);
@@ -199,14 +199,13 @@ export const getMyRanking = async (c: Context<{ Bindings: Env }>) => {
       query = query.gte("updated", dateFilter.toISOString());
     }
 
-    const { data: basicData, error: basicError } = await query.limit(200);
+    const { data: basicData, error: basicError } = await query;
 
     if (basicError) {
       console.error("Error fetching leaderboard for ranking:", basicError);
       return c.json({ error: "Failed to fetch ranking data" }, 500);
     }
 
-    // Aggregate points by student from ClassLeaderboard table
     const studentPoints = new Map();
     basicData?.forEach((entry: any) => {
       const studentId = entry.studentId;
@@ -382,9 +381,7 @@ export const getCombinedLeaderboard = async (c: Context<{ Bindings: Env }>) => {
       pointsQuery = pointsQuery.gte("updated", dateFilter.toISOString());
     }
 
-    const { data: pointsData, error: pointsError } = await pointsQuery.limit(
-      200
-    );
+    const { data: pointsData, error: pointsError } = await pointsQuery;
 
     if (pointsError) {
       console.error("Error fetching points data:", pointsError);

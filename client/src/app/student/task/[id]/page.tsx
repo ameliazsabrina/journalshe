@@ -92,7 +92,7 @@ export default async function StudentTaskDetailPage({
         `${apiUrl}/api/submissions`,
         {
           content,
-          assignmentId: parseInt(assignmentId),
+          assignmentId: assignmentId,
           studentId,
         },
         {
@@ -206,7 +206,7 @@ export default async function StudentTaskDetailPage({
         studentId
       );
 
-      setSubmissionResult(result);
+      setSubmissionResult(result.submission);
 
       toast({
         title: "Submitted!",

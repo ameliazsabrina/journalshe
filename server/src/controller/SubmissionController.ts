@@ -78,7 +78,7 @@ export const createSubmission = async (c: Context<{ Bindings: Env }>) => {
       return c.json({ error: "Failed to create submission" }, 500);
     }
 
-    generateAIFeedback(
+    await generateAIFeedback(
       c,
       newSubmission.id,
       content,
@@ -208,11 +208,15 @@ const awardPointsForSubmission = async (
 
 export const getSubmissionById = async (c: Context<{ Bindings: Env }>) => {
   try {
-    const submissionId = c.req.param("submissionId");
+    const submissionId = parseInt(c.req.param("submissionId"));
     const userId = getUserIdFromToken(c);
 
     if (!userId) {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
+    }
+
+    if (isNaN(submissionId)) {
+      return c.json({ error: "Invalid submission ID" }, 400);
     }
 
     const { data: submission, error: submissionError } = await supabase(
@@ -273,11 +277,15 @@ export const getSubmissionById = async (c: Context<{ Bindings: Env }>) => {
 
 export const regenerateAIFeedback = async (c: Context<{ Bindings: Env }>) => {
   try {
-    const submissionId = c.req.param("submissionId");
+    const submissionId = parseInt(c.req.param("submissionId"));
     const userId = getUserIdFromToken(c);
 
     if (!userId) {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
+    }
+
+    if (isNaN(submissionId)) {
+      return c.json({ error: "Invalid submission ID" }, 400);
     }
 
     const { data: submission, error: submissionError } = await supabase(

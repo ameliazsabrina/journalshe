@@ -6,7 +6,9 @@ import * as jwt from "jsonwebtoken";
 
 import type { Env } from "..";
 
-const JWT_SECRET = process.env.JWT_SECRET as string;
+const getJWTSecret = () => {
+  return process.env.JWT_SECRET as string;
+};
 
 interface RegisterRequest {
   username: string;
@@ -335,7 +337,7 @@ export const login = async (c: Context<{ Bindings: Env }>) => {
       roleId: user.roleId,
     };
 
-    const token = jwt.sign(payload, JWT_SECRET as string, {
+    const token = jwt.sign(payload, getJWTSecret() as string, {
       expiresIn: "7d",
     });
 

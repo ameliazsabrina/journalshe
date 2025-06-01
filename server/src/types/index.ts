@@ -48,14 +48,14 @@ export interface Assignment {
 }
 
 export interface Submission {
-  id: string;
+  id: number;
   content: string;
   submittedAt: string;
   aiFeedback?: string;
   aiScore?: number;
   feedbackGeneratedAt?: string;
   studentId: string;
-  assignmentId: string;
+  assignmentId: number;
   student?: Student;
 }
 

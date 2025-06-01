@@ -6,7 +6,9 @@ import type { Env } from "..";
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET as string;
+const getJWTSecret = () => {
+  return process.env.JWT_SECRET as string;
+};
 
 export interface JWTPayload {
   userId: string;
@@ -30,7 +32,7 @@ export const getUserIdFromToken = (c: Context): string | null => {
 
     if (!token) return null;
 
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, getJWTSecret()) as JWTPayload;
     console.log("Token decoded successfully:", { userId: decoded?.userId });
     return decoded?.userId || null;
   } catch (error) {
@@ -49,7 +51,7 @@ export const getTokenPayload = (c: Context): JWTPayload | null => {
 
     if (!token) return null;
 
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, getJWTSecret()) as JWTPayload;
     return decoded;
   } catch (error) {
     return null;

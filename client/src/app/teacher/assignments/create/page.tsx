@@ -54,7 +54,7 @@ export default function CreateAssignmentPage() {
   const [teacherName, setTeacherName] = useState<string>("Amanda");
   const [loading, setLoading] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [newAssignmentId, setNewAssignmentId] = useState<number | null>(null);
+  const [newAssignmentId, setNewAssignmentId] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -73,8 +73,9 @@ export default function CreateAssignmentPage() {
         const response = await axios.get(`${apiUrl}/api/teachers/me`, {
           withCredentials: true,
         });
-        const user = response.data;
-        if (!user.id) {
+        const data = response.data;
+
+        if (!data.user?.id) {
           toast({
             title: "User ID not found",
             description: "Please log in again.",
@@ -83,8 +84,19 @@ export default function CreateAssignmentPage() {
           router.push("/teacher/login");
           return;
         }
-        setTeacherName(user.user?.fullName || user.username || "Teacher");
-        setTeacherId(user.id);
+
+        if (!data.teacherId) {
+          toast({
+            title: "Teacher ID not found",
+            description: "Please log in again.",
+            variant: "destructive",
+          });
+          router.push("/teacher/login");
+          return;
+        }
+
+        setTeacherName(data.user.fullName || data.user.username || "Teacher");
+        setTeacherId(data.teacherId);
       } catch (error) {
         console.error("Error fetching teacher:", error);
         toast({

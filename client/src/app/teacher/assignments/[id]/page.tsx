@@ -10,9 +10,9 @@ interface PageProps {
 
 function AssignmentDetailPageContent({ params }: PageProps) {
   const { id } = use(params);
-  const assignmentId = parseInt(id, 10);
+  const assignmentId = id;
 
-  if (isNaN(assignmentId)) {
+  if (!assignmentId || assignmentId.trim() === "") {
     throw new Error("Invalid assignment ID");
   }
 

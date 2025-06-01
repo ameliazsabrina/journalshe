@@ -45,7 +45,7 @@ import { format } from "date-fns";
 import axios from "axios";
 
 interface Assignment {
-  id: number;
+  id: string;
   title: string;
   description: string | null;
   dueDate: string;
@@ -219,17 +219,6 @@ export default function TaskSubmit({ assignmentId }: TaskSubmitProps) {
     assignmentId: string,
     studentId: string
   ) => {
-    const result = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/submissions`,
-      {
-        content: content,
-        assignmentId: parseInt(assignmentId),
-        studentId,
-      },
-      {
-        withCredentials: true,
-      }
-    );
     if (!content.trim()) {
       toast({
         title: "Error",
@@ -251,12 +240,24 @@ export default function TaskSubmit({ assignmentId }: TaskSubmitProps) {
     setSubmitting(true);
 
     try {
-      setSubmissionResult(result.data);
+      const result = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/submissions`,
+        {
+          content: content,
+          assignmentId: assignmentId,
+          studentId,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+
+      setSubmissionResult(result.data.submission);
       setShowConfirmDialog(false);
       setShowSuccessDialog(true);
 
-      if (!result.data.aiFeedback) {
-        pollForFeedback(result.data.id);
+      if (!result.data.submission?.aiFeedback) {
+        pollForFeedback(result.data.submission.id);
       }
 
       toast({

@@ -1,6 +1,5 @@
 import type { Context, Next } from "hono";
 import { getTokenPayload, getUserIdFromToken } from "../utils/auth";
-import { supabase } from "../utils/supabase";
 import type { Env } from "..";
 
 export const requireAdmin = async (

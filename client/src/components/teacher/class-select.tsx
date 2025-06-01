@@ -29,37 +29,14 @@ export default function ClassSelect({
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [teacherId, setTeacherId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchTeacherId = async () => {
-      try {
-        const response = await axios.get(`${apiUrl}/api/teachers/me`, {
-          withCredentials: true,
-        });
-        setTeacherId(response.data.id);
-      } catch (err: any) {
-        console.error("Error fetching teacher ID:", err);
-        if (err.response?.status === 401) {
-          setError("Authentication required");
-        } else {
-          setError("Failed to fetch teacher information");
-        }
-      }
-    };
-    fetchTeacherId();
-  }, [apiUrl]);
 
   useEffect(() => {
     const fetchClasses = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          `${apiUrl}/api/teachers/${teacherId}/classes`,
-          {
-            withCredentials: true,
-          }
-        );
+        const response = await axios.get(`${apiUrl}/api/teachers/me/classes`, {
+          withCredentials: true,
+        });
         setClasses(response.data);
         setError(null);
       } catch (err: any) {
@@ -74,10 +51,8 @@ export default function ClassSelect({
       }
     };
 
-    if (teacherId) {
-      fetchClasses();
-    }
-  }, [teacherId, apiUrl]);
+    fetchClasses();
+  }, [apiUrl]);
 
   const getSelectedClassIds = (): number[] => {
     if (!selectedClassId) return [];

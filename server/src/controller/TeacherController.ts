@@ -78,7 +78,7 @@ export const getCurrentTeacher = async (c: Context<{ Bindings: Env }>) => {
         })) || [],
     };
 
-    return c.json({ user: userProfile }, 200);
+    return c.json({ user: userProfile, teacherId: teacher.id }, 200);
   } catch (error) {
     console.error("Error fetching current teacher:", error);
     return c.json({ error: "Internal server error" }, 500);

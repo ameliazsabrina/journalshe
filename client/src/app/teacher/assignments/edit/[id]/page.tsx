@@ -5,7 +5,7 @@ import { Suspense } from "react";
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -49,8 +49,8 @@ import {
 function EditAssignmentPageContent() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const assignmentId = searchParams.get("id");
+  const params = useParams();
+  const assignmentId = params.id as string;
   const { toast } = useToast();
   const [teacherId, setTeacherId] = useState<string | null>(null);
   const [teacherName, setTeacherName] = useState<string>("Teacher");
@@ -75,8 +75,9 @@ function EditAssignmentPageContent() {
         const response = await axios.get(`${apiUrl}/api/teachers/me`, {
           withCredentials: true,
         });
-        const user = response.data;
-        if (!user.id) {
+        const data = response.data;
+
+        if (!data.user?.id) {
           toast({
             title: "User ID not found",
             description: "Please log in again",
@@ -85,10 +86,19 @@ function EditAssignmentPageContent() {
           router.push("/teacher/login");
           return;
         }
-        setTeacherId(user.id);
-        if (user.user?.fullName || user.username) {
-          setTeacherName(user.user?.fullName || user.username);
+
+        if (!data.teacherId) {
+          toast({
+            title: "Teacher ID not found",
+            description: "Please log in again",
+            variant: "destructive",
+          });
+          router.push("/teacher/login");
+          return;
         }
+
+        setTeacherId(data.teacherId);
+        setTeacherName(data.user.fullName || data.user.username || "Teacher");
       } catch (error) {
         console.error("Error fetching teacher:", error);
         toast({
@@ -110,7 +120,8 @@ function EditAssignmentPageContent() {
       setFetchingAssignment(true);
       try {
         const response = await axios.get(
-          `${apiUrl}/api/assignments/${assignmentId}`
+          `${apiUrl}/api/assignments/${assignmentId}`,
+          { withCredentials: true }
         );
         const assignment = response.data;
 
@@ -119,9 +130,9 @@ function EditAssignmentPageContent() {
         setDueDate(
           assignment.dueDate ? new Date(assignment.dueDate) : undefined
         );
-        setSelectedClassId(
-          assignment.classId ? assignment.classId.toString() : null
-        );
+
+        // For now, set to null - the ClassSelect component will handle the default selection
+        setSelectedClassId(null);
       } catch (error: any) {
         console.error("Error fetching assignment:", error);
         toast({
@@ -187,20 +198,19 @@ function EditAssignmentPageContent() {
       let classIdsToSend: number[] = [];
 
       if (typeof selectedClassId === "string" && selectedClassId === "all") {
-        const response = await axios.get(
-          `${apiUrl}/api/teachers/${teacherId}/classes`,
-          { withCredentials: true }
-        );
+        const response = await axios.get(`${apiUrl}/api/teachers/me/classes`, {
+          withCredentials: true,
+        });
         classIdsToSend = response.data.map((cls: any) => cls.id);
       } else if (selectedClassId && Array.isArray(selectedClassId)) {
         classIdsToSend = selectedClassId;
       } else if (selectedClassId && typeof selectedClassId === "number") {
         classIdsToSend = [selectedClassId];
       } else {
-        const response = await axios.get(
-          `${apiUrl}/api/teachers/${teacherId}/classes`,
-          { withCredentials: true }
-        );
+        // Default to all classes if none selected
+        const response = await axios.get(`${apiUrl}/api/teachers/me/classes`, {
+          withCredentials: true,
+        });
         classIdsToSend = response.data.map((cls: any) => cls.id);
       }
 

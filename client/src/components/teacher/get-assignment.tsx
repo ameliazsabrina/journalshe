@@ -29,7 +29,7 @@ interface Class {
 }
 
 interface Assignment {
-  id: number;
+  id: string;
   title: string;
   description: string | null;
   dueDate: string;
@@ -97,12 +97,12 @@ export default function AssignmentsDashboard({
     router.push("/teacher/assignments/create");
   };
 
-  const handleViewDetails = (id: number) => {
+  const handleViewDetails = (id: string) => {
     router.push(`/teacher/assignments/${id}`);
   };
 
-  const handleEdit = (id: number) => {
-    router.push(`/teacher/assignments/edit?id=${id}`);
+  const handleEdit = (id: string) => {
+    router.push(`/teacher/assignments/edit/${id}`);
   };
 
   function getDueStatus(dueDate: string) {

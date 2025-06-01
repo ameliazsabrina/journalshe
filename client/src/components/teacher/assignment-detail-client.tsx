@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 type AssignmentDetailClientProps = {
-  assignmentId: number;
+  assignmentId: string;
 };
 
 export const AssignmentDetailClient: React.FC<AssignmentDetailClientProps> = ({
@@ -65,7 +65,7 @@ export const AssignmentDetailClient: React.FC<AssignmentDetailClientProps> = ({
     number | number[] | "all" | null
   >(null);
 
-  const fetchAssignment = async (id: number) => {
+  const fetchAssignment = async (id: string) => {
     setLoading(true);
     try {
       console.log("Fetching assignment with ID:", id);
@@ -319,9 +319,7 @@ export const AssignmentDetailClient: React.FC<AssignmentDetailClientProps> = ({
                     <Button
                       className="flex items-center gap-2"
                       onClick={() =>
-                        router.push(
-                          `/teacher/assignments/edit?id=${assignmentId}`
-                        )
+                        router.push(`/teacher/assignments/edit/${assignmentId}`)
                       }
                     >
                       <Pencil className="h-4 w-4" />

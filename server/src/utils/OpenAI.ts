@@ -9,9 +9,14 @@ type Env = {
 };
 
 export const openai = (c: Context<{ Bindings: Env }>) => {
-  const apiKey = c.env.OPENAI_API_KEY;
+  const apiKey = c.env?.OPENAI_API_KEY || process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
+    console.error("Environment check:", {
+      hasCloudflareEnv: !!c.env?.OPENAI_API_KEY,
+      hasProcessEnv: !!process.env.OPENAI_API_KEY,
+      envKeys: Object.keys(process.env).filter((key) => key.includes("OPENAI")),
+    });
     throw new Error("OPENAI_API_KEY is required");
   }
 
@@ -56,7 +61,7 @@ Please respond in the following JSON format:
   "feedback": "[detailed constructive feedback explaining the score and providing specific suggestions for improvement]"
 }
 
-Make your feedback encouraging yet honest, highlighting both strengths and areas for improvement.
+Make your feedback encouraging yet honest, highlighting both strengths and areas for improvement. Limit it to max of 7 sentences. Don't include any markdown formatting.
 `;
 
     const completion = await openai(c).chat.completions.create({

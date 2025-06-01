@@ -31,7 +31,7 @@ export default function TeacherNavbar({ username }: { username: string }) {
     axios.post(`${apiUrl}/api/auth/logout`, {
       withCredentials: true,
     });
-    router.push("/teacher/login");
+    router.push("/");
   };
 
   return (
