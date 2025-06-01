@@ -1,11 +1,12 @@
-import { Context } from "hono";
+import type { Context } from "hono";
 import { supabase } from "../utils/supabase";
 import { getUserIdFromToken } from "../utils/auth";
+import type { Env } from "..";
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
-export const recordLogin = async (c: Context) => {
+export const recordLogin = async (c: Context<{ Bindings: Env }>) => {
   try {
     const userId = getUserIdFromToken(c);
 
@@ -13,7 +14,7 @@ export const recordLogin = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student, error: studentError } = await supabase
+    const { data: student, error: studentError } = await supabase(c)
       .from("Student")
       .select("id, userId, streakDays, lastLogin, classId")
       .eq("userId", userId)
@@ -26,7 +27,7 @@ export const recordLogin = async (c: Context) => {
     const today = new Date();
     const todayDateString = today.toISOString().split("T")[0];
 
-    const { data: existingLogin } = await supabase
+    const { data: existingLogin } = await supabase(c)
       .from("LoginStreak")
       .select("id")
       .eq("userId", userId)
@@ -70,7 +71,7 @@ export const recordLogin = async (c: Context) => {
       }
     }
 
-    const { error: loginStreakError } = await supabase
+    const { error: loginStreakError } = await supabase(c)
       .from("LoginStreak")
       .upsert(
         [
@@ -90,7 +91,7 @@ export const recordLogin = async (c: Context) => {
       return c.json({ error: "Failed to record login streak" }, 500);
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabase(c)
       .from("Student")
       .update({
         streakDays: newStreakDays,
@@ -109,7 +110,7 @@ export const recordLogin = async (c: Context) => {
     else if (isConsecutive) bonusPoints = 10;
 
     if (bonusPoints > 0) {
-      const { error: pointsError } = await supabase
+      const { error: pointsError } = await supabase(c)
         .from("ClassLeaderboard")
         .insert([
           {
@@ -138,7 +139,7 @@ export const recordLogin = async (c: Context) => {
   }
 };
 
-export const getMyStreak = async (c: Context) => {
+export const getMyStreak = async (c: Context<{ Bindings: Env }>) => {
   try {
     const userId = getUserIdFromToken(c);
 
@@ -146,7 +147,7 @@ export const getMyStreak = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student, error: studentError } = await supabase
+    const { data: student, error: studentError } = await supabase(c)
       .from("Student")
       .select("id, streakDays, lastLogin, user:User(username, fullName)")
       .eq("userId", userId)
@@ -159,7 +160,7 @@ export const getMyStreak = async (c: Context) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { data: recentLogins, error: loginsError } = await supabase
+    const { data: recentLogins, error: loginsError } = await supabase(c)
       .from("LoginStreak")
       .select("loginDate, consecutive")
       .eq("userId", userId)
@@ -183,7 +184,7 @@ export const getMyStreak = async (c: Context) => {
   }
 };
 
-export const getStreakLeaderboard = async (c: Context) => {
+export const getStreakLeaderboard = async (c: Context<{ Bindings: Env }>) => {
   try {
     const classId = c.req.param("classId");
     const userId = getUserIdFromToken(c);
@@ -192,13 +193,13 @@ export const getStreakLeaderboard = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student } = await supabase
+    const { data: student } = await supabase(c)
       .from("Student")
       .select("classId")
       .eq("userId", userId)
       .single();
 
-    const { data: teacher } = await supabase
+    const { data: teacher } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -212,7 +213,7 @@ export const getStreakLeaderboard = async (c: Context) => {
       return c.json({ error: "Access denied: Not in this class" }, 403);
     }
 
-    const { data: streakData, error: streakError } = await supabase
+    const { data: streakData, error: streakError } = await supabase(c)
       .from("Student")
       .select(
         `
@@ -232,7 +233,7 @@ export const getStreakLeaderboard = async (c: Context) => {
     }
 
     const leaderboard =
-      streakData?.map((student, index) => ({
+      streakData?.map((student: any, index: number) => ({
         rank: index + 1,
         studentId: student.id,
         user: student.user,
@@ -247,7 +248,7 @@ export const getStreakLeaderboard = async (c: Context) => {
   }
 };
 
-export const getStreakStats = async (c: Context) => {
+export const getStreakStats = async (c: Context<{ Bindings: Env }>) => {
   try {
     const userId = getUserIdFromToken(c);
 
@@ -255,7 +256,7 @@ export const getStreakStats = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student, error: studentError } = await supabase
+    const { data: student, error: studentError } = await supabase(c)
       .from("Student")
       .select("classId")
       .eq("userId", userId)
@@ -265,7 +266,7 @@ export const getStreakStats = async (c: Context) => {
       return c.json({ error: "Student not found" }, 404);
     }
 
-    const { data: classStats, error: classStatsError } = await supabase
+    const { data: classStats, error: classStatsError } = await supabase(c)
       .from("Student")
       .select("streakDays, userId")
       .eq("classId", student.classId);
@@ -275,25 +276,26 @@ export const getStreakStats = async (c: Context) => {
       return c.json({ error: "Failed to fetch class statistics" }, 500);
     }
 
-    const streaks = classStats?.map((s) => s.streakDays) || [];
+    const streaks = classStats?.map((s: any) => s.streakDays) || [];
     const totalStudents = streaks.length;
     const averageStreak =
       totalStudents > 0
         ? Math.round(
-            streaks.reduce((sum, streak) => sum + streak, 0) / totalStudents
+            streaks.reduce((sum: any, streak: any) => sum + streak, 0) /
+              totalStudents
           )
         : 0;
     const maxStreak = totalStudents > 0 ? Math.max(...streaks) : 0;
     const studentsWithActiveStreaks = streaks.filter(
-      (streak) => streak > 0
+      (streak: any) => streak > 0
     ).length;
 
     const today = new Date().toISOString().split("T")[0];
-    const { data: todayLogins, error: todayError } = await supabase
+    const { data: todayLogins, error: todayError } = await supabase(c)
       .from("LoginStreak")
       .select("userId")
       .eq("loginDate", today)
-      .in("userId", classStats?.map((s) => s.userId) || []);
+      .in("userId", classStats?.map((s: any) => s.userId) || []);
 
     const todayLoginCount = todayLogins?.length || 0;
 
@@ -314,7 +316,7 @@ export const getStreakStats = async (c: Context) => {
   }
 };
 
-export const getLoginHistory = async (c: Context) => {
+export const getLoginHistory = async (c: Context<{ Bindings: Env }>) => {
   try {
     const { period = "month" } = c.req.query();
     const userId = getUserIdFromToken(c);
@@ -338,7 +340,7 @@ export const getLoginHistory = async (c: Context) => {
         startDate.setMonth(startDate.getMonth() - 1);
     }
 
-    const { data: loginHistory, error: historyError } = await supabase
+    const { data: loginHistory, error: historyError } = await supabase(c)
       .from("LoginStreak")
       .select("loginDate, consecutive")
       .eq("userId", userId)
@@ -357,7 +359,7 @@ export const getLoginHistory = async (c: Context) => {
       loginHistory: loginHistory || [],
       totalLogins: loginHistory?.length || 0,
       consecutiveLogins:
-        loginHistory?.filter((login) => login.consecutive).length || 0,
+        loginHistory?.filter((login: any) => login.consecutive).length || 0,
     });
   } catch (error) {
     console.error("Error in getLoginHistory:", error);

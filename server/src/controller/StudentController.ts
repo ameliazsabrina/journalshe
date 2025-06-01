@@ -1,11 +1,12 @@
-import { Context } from "hono";
+import type { Context } from "hono";
 import { supabase } from "../utils/supabase";
 import { getUserIdFromToken } from "../utils/auth";
 import * as dotenv from "dotenv";
+import type { Env } from "..";
 
 dotenv.config();
 
-export const getStudentById = async (c: Context) => {
+export const getStudentById = async (c: Context<{ Bindings: Env }>) => {
   try {
     const studentId = c.req.param("studentId");
     const userId = getUserIdFromToken(c);
@@ -14,7 +15,7 @@ export const getStudentById = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student, error: studentError } = await supabase
+    const { data: student, error: studentError } = await supabase(c)
       .from("Student")
       .select(
         `
@@ -42,7 +43,7 @@ export const getStudentById = async (c: Context) => {
   }
 };
 
-export const getStudentSubmissions = async (c: Context) => {
+export const getStudentSubmissions = async (c: Context<{ Bindings: Env }>) => {
   try {
     const studentId = c.req.param("studentId");
     const userId = getUserIdFromToken(c);
@@ -51,7 +52,7 @@ export const getStudentSubmissions = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student, error: studentError } = await supabase
+    const { data: student, error: studentError } = await supabase(c)
       .from("Student")
       .select("userId")
       .eq("id", studentId)
@@ -65,7 +66,7 @@ export const getStudentSubmissions = async (c: Context) => {
       return c.json({ error: "Access denied" }, 403);
     }
 
-    const { data: submissions, error: submissionsError } = await supabase
+    const { data: submissions, error: submissionsError } = await supabase(c)
       .from("Submission")
       .select(
         `
@@ -81,7 +82,7 @@ export const getStudentSubmissions = async (c: Context) => {
       return c.json({ error: "Failed to fetch submissions" }, 500);
     }
 
-    const transformedSubmissions = submissions.map((submission) => ({
+    const transformedSubmissions = submissions.map((submission: any) => ({
       id: submission.id,
       assignment: {
         id: submission.assignment?.id,
@@ -109,7 +110,7 @@ export const getStudentSubmissions = async (c: Context) => {
   }
 };
 
-export const getStudentStreaks = async (c: Context) => {
+export const getStudentStreaks = async (c: Context<{ Bindings: Env }>) => {
   try {
     const studentId = c.req.param("studentId");
     const userId = getUserIdFromToken(c);
@@ -118,7 +119,7 @@ export const getStudentStreaks = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student, error: studentError } = await supabase
+    const { data: student, error: studentError } = await supabase(c)
       .from("Student")
       .select("userId")
       .eq("id", studentId)
@@ -132,7 +133,7 @@ export const getStudentStreaks = async (c: Context) => {
       return c.json({ error: "Access denied" }, 403);
     }
 
-    const { data: streaks, error: streaksError } = await supabase
+    const { data: streaks, error: streaksError } = await supabase(c)
       .from("LoginStreak")
       .select("*")
       .eq("userId", userId)
@@ -146,7 +147,7 @@ export const getStudentStreaks = async (c: Context) => {
 
     const currentStreak = calculateCurrentStreak(streaks);
 
-    const transformedStreaks = streaks.map((streak, index) => ({
+    const transformedStreaks = streaks.map((streak: any, index: number) => ({
       id: streak.id,
       user_id: streak.userId,
       current_streak: index === 0 ? currentStreak : undefined,
@@ -189,7 +190,7 @@ const calculateCurrentStreak = (streaks: any[]): number => {
   return currentStreak;
 };
 
-export const getCurrentStudent = async (c: Context) => {
+export const getCurrentStudent = async (c: Context<{ Bindings: Env }>) => {
   try {
     const userId = getUserIdFromToken(c);
 
@@ -197,7 +198,7 @@ export const getCurrentStudent = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student, error: studentError } = await supabase
+    const { data: student, error: studentError } = await supabase(c)
       .from("Student")
       .select(
         `

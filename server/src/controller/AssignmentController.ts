@@ -1,10 +1,8 @@
-import { Context } from "hono";
+import type { Context } from "hono";
+import type { Assignment } from "../types";
 import { supabase } from "../utils/supabase";
 import { getUserIdFromToken } from "../utils/auth";
-import { Assignment } from "../types";
-import * as dotenv from "dotenv";
-
-dotenv.config();
+import type { Env } from "..";
 
 interface CreateAssignmentRequest {
   title: string;
@@ -72,7 +70,7 @@ interface AssignmentWithSubmissionsResponse {
   totalStudents: number;
 }
 
-export const createAssignment = async (c: Context) => {
+export const createAssignment = async (c: Context<{ Bindings: Env }>) => {
   try {
     const {
       title,
@@ -100,7 +98,7 @@ export const createAssignment = async (c: Context) => {
       classIds,
     });
 
-    const { data: assignment, error: assignmentError } = await supabase
+    const { data: assignment, error: assignmentError } = await supabase(c)
       .from("Assignment")
       .insert({ title, description, dueDate, teacherId })
       .select()
@@ -115,12 +113,14 @@ export const createAssignment = async (c: Context) => {
 
     if (classIds && classIds.length > 0) {
       const { data: assignmentClasses, error: assignmentClassError } =
-        await supabase.from("AssignmentClass").insert(
-          classIds.map((classId: number) => ({
-            assignmentId: assignment.id,
-            classId,
-          }))
-        );
+        await supabase(c)
+          .from("AssignmentClass")
+          .insert(
+            classIds.map((classId: number) => ({
+              assignmentId: assignment.id,
+              classId,
+            }))
+          );
 
       if (assignmentClassError) {
         console.error(
@@ -143,7 +143,7 @@ export const createAssignment = async (c: Context) => {
   }
 };
 
-export const getAssignmentsByClass = async (c: Context) => {
+export const getAssignmentsByClass = async (c: Context<{ Bindings: Env }>) => {
   try {
     const classId: string = c.req.param("classId");
     const userId: string | null = getUserIdFromToken(c);
@@ -152,14 +152,14 @@ export const getAssignmentsByClass = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student } = await supabase
+    const { data: student } = await supabase(c)
       .from("Student")
       .select("id, classId")
       .eq("userId", userId)
       .eq("classId", classId)
       .single();
 
-    const { data: teacher } = await supabase
+    const { data: teacher } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -173,7 +173,7 @@ export const getAssignmentsByClass = async (c: Context) => {
     }
 
     const { data: assignmentClasses, error: assignmentClassError } =
-      await supabase
+      await supabase(c)
         .from("AssignmentClass")
         .select(
           `
@@ -208,7 +208,7 @@ export const getAssignmentsByClass = async (c: Context) => {
   }
 };
 
-export const getAssignmentById = async (c: Context) => {
+export const getAssignmentById = async (c: Context<{ Bindings: Env }>) => {
   try {
     const assignmentId: string = c.req.param("assignmentId");
     const userId: string | null = getUserIdFromToken(c);
@@ -217,7 +217,7 @@ export const getAssignmentById = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: assignment, error: assignmentError } = await supabase
+    const { data: assignment, error: assignmentError } = await supabase(c)
       .from("Assignment")
       .select(
         `
@@ -236,7 +236,7 @@ export const getAssignmentById = async (c: Context) => {
       return c.json({ error: "Assignment not found" }, 404);
     }
 
-    const { data: assignmentClasses } = await supabase
+    const { data: assignmentClasses } = await supabase(c)
       .from("AssignmentClass")
       .select("classId")
       .eq("assignmentId", assignmentId);
@@ -244,13 +244,13 @@ export const getAssignmentById = async (c: Context) => {
     if (assignmentClasses && assignmentClasses.length > 0) {
       const classIds = assignmentClasses.map((ac) => ac.classId);
 
-      const { data: studentAccess } = await supabase
+      const { data: studentAccess } = await supabase(c)
         .from("Student")
         .select("id")
         .eq("userId", userId)
         .in("classId", classIds);
 
-      const { data: teacherAccess } = await supabase
+      const { data: teacherAccess } = await supabase(c)
         .from("Teacher")
         .select("id")
         .eq("userId", userId)
@@ -271,7 +271,9 @@ export const getAssignmentById = async (c: Context) => {
   }
 };
 
-export const getAssignmentsByTeacher = async (c: Context) => {
+export const getAssignmentsByTeacher = async (
+  c: Context<{ Bindings: Env }>
+) => {
   try {
     const userId: string | null = getUserIdFromToken(c);
 
@@ -279,7 +281,7 @@ export const getAssignmentsByTeacher = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -289,7 +291,7 @@ export const getAssignmentsByTeacher = async (c: Context) => {
       return c.json({ error: "Access denied: Teacher account required" }, 403);
     }
 
-    const { data: assignments, error: assignmentsError } = await supabase
+    const { data: assignments, error: assignmentsError } = await supabase(c)
       .from("Assignment")
       .select(
         `
@@ -315,7 +317,9 @@ export const getAssignmentsByTeacher = async (c: Context) => {
   }
 };
 
-export const getAssignmentWithSubmissions = async (c: Context) => {
+export const getAssignmentWithSubmissions = async (
+  c: Context<{ Bindings: Env }>
+) => {
   try {
     const assignmentId: string = c.req.param("assignmentId");
     const userId: string | null = getUserIdFromToken(c);
@@ -331,7 +335,7 @@ export const getAssignmentWithSubmissions = async (c: Context) => {
       userId
     );
 
-    const { data: assignment, error: assignmentError } = await supabase
+    const { data: assignment, error: assignmentError } = await supabase(c)
       .from("Assignment")
       .select(
         `
@@ -352,7 +356,7 @@ export const getAssignmentWithSubmissions = async (c: Context) => {
 
     console.log("Assignment found:", assignment);
 
-    const { data: teacher } = await supabase
+    const { data: teacher } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -365,7 +369,7 @@ export const getAssignmentWithSubmissions = async (c: Context) => {
 
     console.log("User authorized as teacher:", teacher.id);
 
-    const { data: assignmentClasses } = await supabase
+    const { data: assignmentClasses } = await supabase(c)
       .from("AssignmentClass")
       .select(
         `
@@ -380,7 +384,7 @@ export const getAssignmentWithSubmissions = async (c: Context) => {
 
     console.log("Assignment classes:", assignmentClasses);
 
-    const { data: submissions, error: submissionsError } = await supabase
+    const { data: submissions, error: submissionsError } = await supabase(c)
       .from("Submission")
       .select(
         `
@@ -411,10 +415,11 @@ export const getAssignmentWithSubmissions = async (c: Context) => {
     if (assignmentClasses && assignmentClasses.length > 0) {
       const classIds = assignmentClasses.map((ac) => ac.classId);
 
-      const { count: studentsCount, error: studentsCountError } = await supabase
-        .from("Student")
-        .select("*", { count: "exact", head: true })
-        .in("classId", classIds);
+      const { count: studentsCount, error: studentsCountError } =
+        await supabase(c)
+          .from("Student")
+          .select("*", { count: "exact", head: true })
+          .in("classId", classIds);
 
       if (!studentsCountError) {
         totalStudents = studentsCount || 0;
@@ -438,7 +443,7 @@ export const getAssignmentWithSubmissions = async (c: Context) => {
   }
 };
 
-export const updateAssignment = async (c: Context) => {
+export const updateAssignment = async (c: Context<{ Bindings: Env }>) => {
   try {
     const assignmentId: string = c.req.param("assignmentId");
     const { title, description, dueDate, classIds }: UpdateAssignmentRequest =
@@ -460,7 +465,7 @@ export const updateAssignment = async (c: Context) => {
       );
     }
 
-    const { data: assignment, error: assignmentError } = await supabase
+    const { data: assignment, error: assignmentError } = await supabase(c)
       .from("Assignment")
       .select("id, teacherId")
       .eq("id", assignmentId)
@@ -470,7 +475,7 @@ export const updateAssignment = async (c: Context) => {
       return c.json({ error: "Assignment not found" }, 404);
     }
 
-    const { data: teacher } = await supabase
+    const { data: teacher } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -481,7 +486,7 @@ export const updateAssignment = async (c: Context) => {
       return c.json({ error: "Access denied: Not your assignment" }, 403);
     }
 
-    const { data: updatedAssignment, error: updateError } = await supabase
+    const { data: updatedAssignment, error: updateError } = await supabase(c)
       .from("Assignment")
       .update({
         title,
@@ -499,13 +504,13 @@ export const updateAssignment = async (c: Context) => {
     }
 
     if (classIds && Array.isArray(classIds)) {
-      await supabase
+      await supabase(c)
         .from("AssignmentClass")
         .delete()
         .eq("assignmentId", assignmentId);
 
       if (classIds.length > 0) {
-        const { error: assignmentClassError } = await supabase
+        const { error: assignmentClassError } = await supabase(c)
           .from("AssignmentClass")
           .insert(
             classIds.map((classId: number) => ({
@@ -531,7 +536,7 @@ export const updateAssignment = async (c: Context) => {
   }
 };
 
-export const deleteAssignment = async (c: Context) => {
+export const deleteAssignment = async (c: Context<{ Bindings: Env }>) => {
   try {
     const assignmentId: string = c.req.param("assignmentId");
     const userId: string | null = getUserIdFromToken(c);
@@ -542,7 +547,7 @@ export const deleteAssignment = async (c: Context) => {
 
     console.log("Deleting assignment:", assignmentId, "by user:", userId);
 
-    const { data: assignment, error: assignmentError } = await supabase
+    const { data: assignment, error: assignmentError } = await supabase(c)
       .from("Assignment")
       .select("id, teacherId")
       .eq("id", assignmentId)
@@ -552,7 +557,7 @@ export const deleteAssignment = async (c: Context) => {
       return c.json({ error: "Assignment not found" }, 404);
     }
 
-    const { data: teacher } = await supabase
+    const { data: teacher } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -563,14 +568,17 @@ export const deleteAssignment = async (c: Context) => {
       return c.json({ error: "Access denied: Not your assignment" }, 403);
     }
 
-    await supabase
+    await supabase(c)
       .from("AssignmentClass")
       .delete()
       .eq("assignmentId", assignmentId);
 
-    await supabase.from("Submission").delete().eq("assignmentId", assignmentId);
+    await supabase(c)
+      .from("Submission")
+      .delete()
+      .eq("assignmentId", assignmentId);
 
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabase(c)
       .from("Assignment")
       .delete()
       .eq("id", assignmentId);

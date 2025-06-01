@@ -1,7 +1,8 @@
-import { Context } from "hono";
+import type { Context } from "hono";
 import { getCookie } from "hono/cookie";
 import * as jwt from "jsonwebtoken";
 import * as dotenv from "dotenv";
+import type { Env } from "..";
 
 dotenv.config();
 

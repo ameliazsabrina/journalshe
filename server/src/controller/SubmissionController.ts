@@ -1,12 +1,13 @@
-import { Context } from "hono";
+import type { Context } from "hono";
 import { supabase } from "../utils/supabase";
 import { gradeSubmission } from "../utils/OpenAI";
 import { getUserIdFromToken } from "../utils/auth";
 import * as dotenv from "dotenv";
+import type { Env } from "..";
 
 dotenv.config();
 
-export const createSubmission = async (c: Context) => {
+export const createSubmission = async (c: Context<{ Bindings: Env }>) => {
   try {
     const { content, assignmentId, studentId } = await c.req.json();
     const userId = getUserIdFromToken(c);
@@ -22,7 +23,7 @@ export const createSubmission = async (c: Context) => {
       );
     }
 
-    const { data: student, error: studentError } = await supabase
+    const { data: student, error: studentError } = await supabase(c)
       .from("Student")
       .select("userId")
       .eq("id", studentId)
@@ -32,7 +33,7 @@ export const createSubmission = async (c: Context) => {
       return c.json({ error: "Access denied: Invalid student ID" }, 403);
     }
 
-    const { data: assignment, error: assignmentError } = await supabase
+    const { data: assignment, error: assignmentError } = await supabase(c)
       .from("Assignment")
       .select("id, title, description")
       .eq("id", assignmentId)
@@ -42,7 +43,7 @@ export const createSubmission = async (c: Context) => {
       return c.json({ error: "Assignment not found" }, 404);
     }
 
-    const { data: existingSubmission } = await supabase
+    const { data: existingSubmission } = await supabase(c)
       .from("Submission")
       .select("id")
       .eq("studentId", studentId)
@@ -56,7 +57,7 @@ export const createSubmission = async (c: Context) => {
       );
     }
 
-    const { data: newSubmission, error: submissionError } = await supabase
+    const { data: newSubmission, error: submissionError } = await supabase(c)
       .from("Submission")
       .insert([
         {
@@ -78,6 +79,7 @@ export const createSubmission = async (c: Context) => {
     }
 
     generateAIFeedback(
+      c,
       newSubmission.id,
       content,
       assignment.title,
@@ -98,6 +100,7 @@ export const createSubmission = async (c: Context) => {
 };
 
 const generateAIFeedback = async (
+  c: Context<{ Bindings: Env }>,
   submissionId: number,
   content: string,
   assignmentTitle: string,
@@ -107,12 +110,13 @@ const generateAIFeedback = async (
     console.log(`Generating AI feedback for submission ${submissionId}...`);
 
     const { score, feedback } = await gradeSubmission(
+      c as any,
       content,
       assignmentTitle,
       assignmentDescription
     );
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabase(c)
       .from("Submission")
       .update({
         aiFeedback: feedback,
@@ -130,11 +134,11 @@ const generateAIFeedback = async (
       `AI feedback generated successfully for submission ${submissionId}. Score: ${score}`
     );
 
-    await awardPointsForSubmission(submissionId, score);
+    await awardPointsForSubmission(c as any, submissionId, score);
   } catch (error) {
     console.error("Error generating AI feedback:", error);
 
-    await supabase
+    await supabase(c)
       .from("Submission")
       .update({
         aiFeedback:
@@ -147,11 +151,12 @@ const generateAIFeedback = async (
 };
 
 const awardPointsForSubmission = async (
+  c: Context<{ Bindings: Env }>,
   submissionId: number,
   aiScore: number
 ) => {
   try {
-    const { data: submission, error: submissionError } = await supabase
+    const { data: submission, error: submissionError } = await supabase(c)
       .from("Submission")
       .select(
         `
@@ -178,7 +183,7 @@ const awardPointsForSubmission = async (
       `Calculating points for submission ${submissionId}: AI Score: ${aiScore}, Total Points: ${points}`
     );
 
-    const { error: pointsError } = await supabase
+    const { error: pointsError } = await supabase(c as any)
       .from("ClassLeaderboard")
       .insert([
         {
@@ -201,7 +206,7 @@ const awardPointsForSubmission = async (
   }
 };
 
-export const getSubmissionById = async (c: Context) => {
+export const getSubmissionById = async (c: Context<{ Bindings: Env }>) => {
   try {
     const submissionId = c.req.param("submissionId");
     const userId = getUserIdFromToken(c);
@@ -210,7 +215,9 @@ export const getSubmissionById = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: submission, error: submissionError } = await supabase
+    const { data: submission, error: submissionError } = await supabase(
+      c as any
+    )
       .from("Submission")
       .select(
         `
@@ -241,13 +248,13 @@ export const getSubmissionById = async (c: Context) => {
       return c.json({ error: "Submission not found" }, 404);
     }
 
-    const { data: student } = await supabase
+    const { data: student } = await supabase(c as any)
       .from("Student")
       .select("userId")
       .eq("id", submission.studentId)
       .single();
 
-    const { data: teacher } = await supabase
+    const { data: teacher } = await supabase(c as any)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -264,7 +271,7 @@ export const getSubmissionById = async (c: Context) => {
   }
 };
 
-export const regenerateAIFeedback = async (c: Context) => {
+export const regenerateAIFeedback = async (c: Context<{ Bindings: Env }>) => {
   try {
     const submissionId = c.req.param("submissionId");
     const userId = getUserIdFromToken(c);
@@ -273,7 +280,9 @@ export const regenerateAIFeedback = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: submission, error: submissionError } = await supabase
+    const { data: submission, error: submissionError } = await supabase(
+      c as any
+    )
       .from("Submission")
       .select(
         `
@@ -290,13 +299,13 @@ export const regenerateAIFeedback = async (c: Context) => {
       return c.json({ error: "Submission not found" }, 404);
     }
 
-    const { data: student } = await supabase
+    const { data: student } = await supabase(c as any)
       .from("Student")
       .select("userId")
       .eq("id", submission.studentId)
       .single();
 
-    const { data: teacher } = await supabase
+    const { data: teacher } = await supabase(c as any)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -307,6 +316,7 @@ export const regenerateAIFeedback = async (c: Context) => {
     }
 
     await generateAIFeedback(
+      c,
       submission.id,
       submission.content,
       (submission.assignment as any).title,

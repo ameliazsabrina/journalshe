@@ -1,8 +1,10 @@
-import { Context } from "hono";
+import type { Context } from "hono";
 import { supabase } from "../utils/supabase";
 import { getUserIdFromToken } from "../utils/auth";
 import * as bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
+
+import type { Env } from "..";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
@@ -31,10 +33,11 @@ const validateRegistrationData = (data: RegisterRequest): string | null => {
 };
 
 const checkUserExists = async (
+  c: Context<{ Bindings: Env }>,
   username: string,
   email: string
 ): Promise<boolean> => {
-  const { data: existing } = await supabase
+  const { data: existing } = await supabase(c)
     .from("User")
     .select("id")
     .or(`username.eq.${username},email.eq.${email}`);
@@ -42,7 +45,7 @@ const checkUserExists = async (
   return !!(existing && existing.length > 0);
 };
 
-export const registerStudent = async (c: Context) => {
+export const registerStudent = async (c: Context<{ Bindings: Env }>) => {
   const { username, email, fullName, password, schoolId, classIds } =
     await c.req.json();
 
@@ -75,14 +78,15 @@ export const registerStudent = async (c: Context) => {
   const classId = numericClassIds[0];
 
   try {
-    const userExists = await checkUserExists(username, email);
+    const userExists = await checkUserExists(c, username, email);
+    console.log("User exists:", userExists);
     if (userExists) {
       return c.json({ error: "Username or email already exists" }, 400);
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const { data: newUser, error: userError } = await supabase
+    const { data: newUser, error: userError } = await supabase(c)
       .from("User")
       .insert([
         {
@@ -106,7 +110,7 @@ export const registerStudent = async (c: Context) => {
       );
     }
 
-    const { data: newStudent, error: studentError } = await supabase
+    const { data: newStudent, error: studentError } = await supabase(c)
       .from("Student")
       .insert([
         {
@@ -149,7 +153,7 @@ export const registerStudent = async (c: Context) => {
   }
 };
 
-export const registerTeacher = async (c: Context) => {
+export const registerTeacher = async (c: Context<{ Bindings: Env }>) => {
   const { username, email, fullName, password, schoolId, classIds } =
     await c.req.json();
 
@@ -161,7 +165,7 @@ export const registerTeacher = async (c: Context) => {
     return c.json({ error: "At least one class must be selected" }, 400);
   }
 
-  const { data: existing } = await supabase
+  const { data: existing } = await supabase(c)
     .from("User")
     .select("id")
     .or(`username.eq.${username},email.eq.${email}`);
@@ -174,7 +178,7 @@ export const registerTeacher = async (c: Context) => {
   const userId = crypto.randomUUID();
   const teacherId = crypto.randomUUID();
 
-  const { data: newUser, error: userError } = await supabase
+  const { data: newUser, error: userError } = await supabase(c)
     .from("User")
     .insert([
       {
@@ -197,7 +201,7 @@ export const registerTeacher = async (c: Context) => {
     );
   }
 
-  const { data: newTeacher, error: teacherError } = await supabase
+  const { data: newTeacher, error: teacherError } = await supabase(c)
     .from("Teacher")
     .insert([
       {
@@ -221,7 +225,7 @@ export const registerTeacher = async (c: Context) => {
     classId: classId,
   }));
 
-  const { data: teacherClasses, error: classError } = await supabase
+  const { data: teacherClasses, error: classError } = await supabase(c)
     .from("TeacherClass")
     .insert(teacherClassInserts)
     .select();
@@ -244,14 +248,14 @@ export const registerTeacher = async (c: Context) => {
   );
 };
 
-export const registerAdmin = async (c: Context) => {
+export const registerAdmin = async (c: Context<{ Bindings: Env }>) => {
   const { username, email, fullName, password, schoolId } = await c.req.json();
 
   if (!password) {
     return c.json({ error: "Password is required" }, 400);
   }
 
-  const { data: existing } = await supabase
+  const { data: existing } = await supabase(c)
     .from("User")
     .select("id")
     .or(`username.eq.${username},email.eq.${email}`);
@@ -262,7 +266,7 @@ export const registerAdmin = async (c: Context) => {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  const { data: newUser, error } = await supabase
+  const { data: newUser, error } = await supabase(c)
     .from("User")
     .insert([
       {
@@ -278,7 +282,7 @@ export const registerAdmin = async (c: Context) => {
     .select()
     .single();
 
-  const { data: newAdmin } = await supabase
+  const { data: newAdmin } = await supabase(c)
     .from("Admin")
     .insert([
       {
@@ -306,11 +310,11 @@ export const registerAdmin = async (c: Context) => {
   );
 };
 
-export const login = async (c: Context) => {
+export const login = async (c: Context<{ Bindings: Env }>) => {
   const { username, password } = await c.req.json();
 
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabase(c)
       .from("User")
       .select("*")
       .eq("username", username)
@@ -348,21 +352,21 @@ export const login = async (c: Context) => {
 
     let extraData = {};
     if (user.roleId === 1) {
-      const { data } = await supabase
+      const { data } = await supabase(c)
         .from("Student")
         .select("*")
         .eq("userId", user.id)
         .single();
       extraData = data || {};
     } else if (user.roleId === 2) {
-      const { data } = await supabase
+      const { data } = await supabase(c)
         .from("Teacher")
         .select("*")
         .eq("userId", user.id)
         .single();
       extraData = data || {};
     } else if (user.roleId === 3) {
-      const { data } = await supabase
+      const { data } = await supabase(c)
         .from("Admin")
         .select("*")
         .eq("userId", user.id)
@@ -387,7 +391,7 @@ export const login = async (c: Context) => {
   }
 };
 
-export const profile = async (c: Context) => {
+export const profile = async (c: Context<{ Bindings: Env }>) => {
   try {
     const userId = getUserIdFromToken(c);
 
@@ -395,7 +399,7 @@ export const profile = async (c: Context) => {
       return c.json({ error: "Unauthorized: No token provided" }, 401);
     }
 
-    const { data: user, error } = await supabase
+    const { data: user, error } = await supabase(c)
       .from("User")
       .select("*")
       .eq("id", userId)
@@ -411,7 +415,7 @@ export const profile = async (c: Context) => {
   }
 };
 
-export const logout = async (c: Context) => {
+export const logout = async (c: Context<{ Bindings: Env }>) => {
   c.res.headers.set(
     "Set-Cookie",
     `token=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`

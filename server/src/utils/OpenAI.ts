@@ -1,11 +1,24 @@
 import OpenAI from "openai";
 import * as dotenv from "dotenv";
+import { Context } from "hono";
 
 dotenv.config();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+type Env = {
+  OPENAI_API_KEY: string;
+};
+
+export const openai = (c: Context<{ Bindings: Env }>) => {
+  const apiKey = c.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is required");
+  }
+
+  return new OpenAI({
+    apiKey: apiKey,
+  });
+};
 
 interface GradingResult {
   score: number;
@@ -13,6 +26,7 @@ interface GradingResult {
 }
 
 export const gradeSubmission = async (
+  c: Context<{ Bindings: Env }>,
   content: string,
   assignmentTitle: string,
   assignmentDescription?: string
@@ -45,7 +59,7 @@ Please respond in the following JSON format:
 Make your feedback encouraging yet honest, highlighting both strengths and areas for improvement.
 `;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await openai(c).chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {

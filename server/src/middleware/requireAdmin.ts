@@ -1,7 +1,12 @@
-import { Context, Next } from "hono";
-import { getTokenPayload } from "../utils/auth";
+import type { Context, Next } from "hono";
+import { getTokenPayload, getUserIdFromToken } from "../utils/auth";
+import { supabase } from "../utils/supabase";
+import type { Env } from "..";
 
-export const requireAdmin = async (c: Context, next: Next) => {
+export const requireAdmin = async (
+  c: Context<{ Bindings: Env }>,
+  next: Next
+) => {
   const payload = getTokenPayload(c);
 
   if (!payload) {

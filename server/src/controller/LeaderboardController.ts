@@ -1,11 +1,12 @@
-import { Context } from "hono";
+import type { Context } from "hono";
 import { supabase } from "../utils/supabase";
 import { getUserIdFromToken } from "../utils/auth";
 import * as dotenv from "dotenv";
+import type { Env } from "..";
 
 dotenv.config();
 
-export const getClassLeaderboard = async (c: Context) => {
+export const getClassLeaderboard = async (c: Context<{ Bindings: Env }>) => {
   try {
     const classId = c.req.param("classId");
     const { period = "all" } = c.req.query();
@@ -15,13 +16,13 @@ export const getClassLeaderboard = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student } = await supabase
+    const { data: student } = await supabase(c)
       .from("Student")
       .select("classId")
       .eq("userId", userId)
       .single();
 
-    const { data: teacher } = await supabase
+    const { data: teacher } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -62,7 +63,7 @@ export const getClassLeaderboard = async (c: Context) => {
         break;
     }
 
-    let query = supabase
+    let query = supabase(c)
       .from("ClassLeaderboard")
       .select(
         `
@@ -91,7 +92,7 @@ export const getClassLeaderboard = async (c: Context) => {
     }
 
     const studentPoints = new Map();
-    basicData?.forEach((entry) => {
+    basicData?.forEach((entry: any) => {
       const studentId = entry.studentId;
       if (!studentPoints.has(studentId)) {
         studentPoints.set(studentId, {
@@ -129,7 +130,7 @@ export const getClassLeaderboard = async (c: Context) => {
   }
 };
 
-export const getMyRanking = async (c: Context) => {
+export const getMyRanking = async (c: Context<{ Bindings: Env }>) => {
   try {
     const { period = "all" } = c.req.query();
     const userId = getUserIdFromToken(c);
@@ -138,7 +139,7 @@ export const getMyRanking = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student, error: studentError } = await supabase
+    const { data: student, error: studentError } = await supabase(c)
       .from("Student")
       .select("id, classId")
       .eq("userId", userId)
@@ -177,7 +178,7 @@ export const getMyRanking = async (c: Context) => {
         break;
     }
 
-    let query = supabase
+    let query = supabase(c)
       .from("ClassLeaderboard")
       .select(
         `
@@ -207,7 +208,7 @@ export const getMyRanking = async (c: Context) => {
 
     // Aggregate points by student from ClassLeaderboard table
     const studentPoints = new Map();
-    basicData?.forEach((entry) => {
+    basicData?.forEach((entry: any) => {
       const studentId = entry.studentId;
       if (!studentPoints.has(studentId)) {
         studentPoints.set(studentId, {
@@ -256,7 +257,7 @@ export const getMyRanking = async (c: Context) => {
   }
 };
 
-export const updateStudentPoints = async (c: Context) => {
+export const updateStudentPoints = async (c: Context<{ Bindings: Env }>) => {
   try {
     const { studentId, points } = await c.req.json();
     const userId = getUserIdFromToken(c);
@@ -265,7 +266,7 @@ export const updateStudentPoints = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -275,7 +276,7 @@ export const updateStudentPoints = async (c: Context) => {
       return c.json({ error: "Access denied: Teacher only" }, 403);
     }
 
-    const { data: student, error: studentError } = await supabase
+    const { data: student, error: studentError } = await supabase(c)
       .from("Student")
       .select("classId")
       .eq("id", studentId)
@@ -285,7 +286,7 @@ export const updateStudentPoints = async (c: Context) => {
       return c.json({ error: "Student not found" }, 404);
     }
 
-    const { error: pointsError } = await supabase
+    const { error: pointsError } = await supabase(c)
       .from("ClassLeaderboard")
       .insert([
         {
@@ -308,7 +309,7 @@ export const updateStudentPoints = async (c: Context) => {
   }
 };
 
-export const getCombinedLeaderboard = async (c: Context) => {
+export const getCombinedLeaderboard = async (c: Context<{ Bindings: Env }>) => {
   try {
     const classId = c.req.param("classId");
     const { period = "all" } = c.req.query();
@@ -318,13 +319,13 @@ export const getCombinedLeaderboard = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: student } = await supabase
+    const { data: student } = await supabase(c)
       .from("Student")
       .select("classId")
       .eq("userId", userId)
       .single();
 
-    const { data: teacher } = await supabase
+    const { data: teacher } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -365,7 +366,7 @@ export const getCombinedLeaderboard = async (c: Context) => {
         break;
     }
 
-    let pointsQuery = supabase
+    let pointsQuery = supabase(c)
       .from("ClassLeaderboard")
       .select(
         `
@@ -391,7 +392,7 @@ export const getCombinedLeaderboard = async (c: Context) => {
     }
 
     const studentPoints = new Map();
-    pointsData?.forEach((entry) => {
+    pointsData?.forEach((entry: any) => {
       const studentId = entry.studentId;
       if (!studentPoints.has(studentId)) {
         studentPoints.set(studentId, 0);
@@ -399,7 +400,7 @@ export const getCombinedLeaderboard = async (c: Context) => {
       studentPoints.set(studentId, studentPoints.get(studentId) + entry.points);
     });
 
-    const { data: studentsData, error: studentsError } = await supabase
+    const { data: studentsData, error: studentsError } = await supabase(c)
       .from("Student")
       .select(
         `
@@ -417,7 +418,7 @@ export const getCombinedLeaderboard = async (c: Context) => {
     }
 
     const combinedData =
-      studentsData?.map((student) => ({
+      studentsData?.map((student: any) => ({
         id: student.id,
         user: student.user,
         points: studentPoints.get(student.id) || 0,
@@ -427,9 +428,9 @@ export const getCombinedLeaderboard = async (c: Context) => {
           (studentPoints.get(student.id) || 0) + student.streakDays * 5,
       })) || [];
 
-    combinedData.sort((a, b) => b.totalScore - a.totalScore);
+    combinedData.sort((a: any, b: any) => b.totalScore - a.totalScore);
 
-    const leaderboard = combinedData.map((student, index) => ({
+    const leaderboard = combinedData.map((student: any, index: number) => ({
       ...student,
       rank: index + 1,
     }));

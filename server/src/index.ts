@@ -10,12 +10,22 @@ import student from "./route/student";
 import submission from "./route/submission";
 import teacher from "./route/teacher";
 
-const app = new Hono();
+export type Env = {
+  CLIENT_URL: string;
+  OPENAI_API_KEY: string;
+  SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+};
+
+const app = new Hono<{ Bindings: Env }>();
 
 app.use(
   "*",
   cors({
-    origin: "http://localhost:3000",
+    origin: (origin, c) => {
+      console.log(origin);
+      return c.env.CLIENT_URL;
+    },
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],

@@ -1,9 +1,10 @@
-import { Context } from "hono";
+import type { Context } from "hono";
 import { supabase } from "../utils/supabase";
 import { getUserIdFromToken } from "../utils/auth";
-import { TeacherProfile } from "../types";
+import type { TeacherProfile } from "../types";
+import type { Env } from "..";
 
-export const getCurrentTeacher = async (c: Context) => {
+export const getCurrentTeacher = async (c: Context<{ Bindings: Env }>) => {
   try {
     const userId = getUserIdFromToken(c);
 
@@ -11,7 +12,7 @@ export const getCurrentTeacher = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select(
         `
@@ -38,7 +39,9 @@ export const getCurrentTeacher = async (c: Context) => {
       return c.json({ error: "Teacher not found" }, 404);
     }
 
-    const { data: teacherClasses, error: teacherClassesError } = await supabase
+    const { data: teacherClasses, error: teacherClassesError } = await supabase(
+      c
+    )
       .from("TeacherClass")
       .select(
         `
@@ -69,7 +72,7 @@ export const getCurrentTeacher = async (c: Context) => {
           }
         : undefined,
       classes:
-        teacherClasses?.map((tc) => ({
+        teacherClasses?.map((tc: any) => ({
           id: tc.classId,
           name: (tc.class as any)?.name || `Class ${tc.classId}`,
         })) || [],
@@ -82,7 +85,7 @@ export const getCurrentTeacher = async (c: Context) => {
   }
 };
 
-export const getTeacherById = async (c: Context) => {
+export const getTeacherById = async (c: Context<{ Bindings: Env }>) => {
   try {
     const teacherId = c.req.param("teacherId");
     const userId = getUserIdFromToken(c);
@@ -91,7 +94,7 @@ export const getTeacherById = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select(
         `
@@ -111,7 +114,7 @@ export const getTeacherById = async (c: Context) => {
       .eq("id", teacherId)
       .single();
 
-    const { data: teacherClasses } = await supabase
+    const { data: teacherClasses } = await supabase(c)
       .from("TeacherClass")
       .select("classId")
       .eq("teacherId", teacherId);
@@ -127,7 +130,7 @@ export const getTeacherById = async (c: Context) => {
   }
 };
 
-export const getTeacherAssignments = async (c: Context) => {
+export const getTeacherAssignments = async (c: Context<{ Bindings: Env }>) => {
   try {
     const userId = getUserIdFromToken(c);
 
@@ -135,7 +138,7 @@ export const getTeacherAssignments = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -145,7 +148,7 @@ export const getTeacherAssignments = async (c: Context) => {
       return c.json({ error: "Teacher not found" }, 404);
     }
 
-    const { data: assignments, error: assignmentsError } = await supabase
+    const { data: assignments, error: assignmentsError } = await supabase(c)
       .from("Assignment")
       .select(
         `
@@ -166,9 +169,9 @@ export const getTeacherAssignments = async (c: Context) => {
     }
 
     const assignmentsWithStats = await Promise.all(
-      assignments.map(async (assignment) => {
+      assignments.map(async (assignment: any) => {
         const { count: submissionCount, error: submissionCountError } =
-          await supabase
+          await supabase(c)
             .from("Submission")
             .select("*", { count: "exact", head: true })
             .eq("assignmentId", assignment.id);
@@ -177,13 +180,13 @@ export const getTeacherAssignments = async (c: Context) => {
           console.error("Error counting submissions:", submissionCountError);
         }
 
-        const { data: submissions, error: submissionsError } = await supabase
+        const { data: submissions, error: submissionsError } = await supabase(c)
           .from("Submission")
           .select("studentId")
           .eq("assignmentId", assignment.id);
 
         const { data: assignmentClasses, error: assignmentClassesError } =
-          await supabase
+          await supabase(c)
             .from("AssignmentClass")
             .select("classId")
             .eq("assignmentId", assignment.id);
@@ -194,10 +197,10 @@ export const getTeacherAssignments = async (c: Context) => {
           assignmentClasses &&
           assignmentClasses.length > 0
         ) {
-          const classIds = assignmentClasses.map((ac) => ac.classId);
+          const classIds = assignmentClasses.map((ac: any) => ac.classId);
 
           const { count: studentsCount, error: studentsCountError } =
-            await supabase
+            await supabase(c)
               .from("Student")
               .select("*", { count: "exact", head: true })
               .in("classId", classIds);
@@ -207,7 +210,7 @@ export const getTeacherAssignments = async (c: Context) => {
           }
         } else {
           const { data: teacherClasses, error: teacherClassesError } =
-            await supabase
+            await supabase(c)
               .from("TeacherClass")
               .select("classId")
               .eq("teacherId", teacher.id);
@@ -217,10 +220,10 @@ export const getTeacherAssignments = async (c: Context) => {
             teacherClasses &&
             teacherClasses.length > 0
           ) {
-            const classIds = teacherClasses.map((tc) => tc.classId);
+            const classIds = teacherClasses.map((tc: any) => tc.classId);
 
             const { count: studentsCount, error: studentsCountError } =
-              await supabase
+              await supabase(c)
                 .from("Student")
                 .select("*", { count: "exact", head: true })
                 .in("classId", classIds);
@@ -247,7 +250,9 @@ export const getTeacherAssignments = async (c: Context) => {
   }
 };
 
-export const getAssignmentWithSubmissions = async (c: Context) => {
+export const getAssignmentWithSubmissions = async (
+  c: Context<{ Bindings: Env }>
+) => {
   try {
     const assignmentId = c.req.param("assignmentId");
     const userId = getUserIdFromToken(c);
@@ -256,7 +261,7 @@ export const getAssignmentWithSubmissions = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -266,7 +271,7 @@ export const getAssignmentWithSubmissions = async (c: Context) => {
       return c.json({ error: "Teacher not found" }, 404);
     }
 
-    const { data: assignment, error: assignmentError } = await supabase
+    const { data: assignment, error: assignmentError } = await supabase(c)
       .from("Assignment")
       .select(
         `
@@ -286,7 +291,7 @@ export const getAssignmentWithSubmissions = async (c: Context) => {
       return c.json({ error: "Assignment not found" }, 404);
     }
 
-    const { data: submissions, error: submissionsError } = await supabase
+    const { data: submissions, error: submissionsError } = await supabase(c)
       .from("Submission")
       .select(
         `
@@ -322,7 +327,7 @@ export const getAssignmentWithSubmissions = async (c: Context) => {
   }
 };
 
-export const getTeacherStats = async (c: Context) => {
+export const getTeacherStats = async (c: Context<{ Bindings: Env }>) => {
   try {
     const userId = getUserIdFromToken(c);
 
@@ -330,7 +335,7 @@ export const getTeacherStats = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -341,13 +346,13 @@ export const getTeacherStats = async (c: Context) => {
     }
 
     const { count: assignmentsCount, error: assignmentsCountError } =
-      await supabase
+      await supabase(c)
         .from("Assignment")
         .select("*", { count: "exact", head: true })
         .eq("teacherId", teacher.id);
 
     const { data: teacherAssignments, error: teacherAssignmentsError } =
-      await supabase
+      await supabase(c)
         .from("Assignment")
         .select("id")
         .eq("teacherId", teacher.id);
@@ -357,7 +362,7 @@ export const getTeacherStats = async (c: Context) => {
       const assignmentIds = teacherAssignments.map((a) => a.id);
       if (assignmentIds.length > 0) {
         const { count: submissionsCount, error: submissionsCountError } =
-          await supabase
+          await supabase(c)
             .from("Submission")
             .select("*", { count: "exact", head: true })
             .in("assignmentId", assignmentIds);
@@ -371,7 +376,7 @@ export const getTeacherStats = async (c: Context) => {
     const threeDaysFromNow = new Date();
     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
 
-    const { count: dueSoonCount, error: dueSoonError } = await supabase
+    const { count: dueSoonCount, error: dueSoonError } = await supabase(c)
       .from("Assignment")
       .select("*", { count: "exact", head: true })
       .eq("teacherId", teacher.id)
@@ -393,7 +398,7 @@ export const getTeacherStats = async (c: Context) => {
   }
 };
 
-export const getTeacherClasses = async (c: Context) => {
+export const getTeacherClasses = async (c: Context<{ Bindings: Env }>) => {
   try {
     const teacherId = c.req.param("teacherId");
     const userId = getUserIdFromToken(c);
@@ -402,7 +407,7 @@ export const getTeacherClasses = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -412,7 +417,9 @@ export const getTeacherClasses = async (c: Context) => {
       return c.json({ error: "Teacher not found" }, 404);
     }
 
-    const { data: teacherClasses, error: teacherClassesError } = await supabase
+    const { data: teacherClasses, error: teacherClassesError } = await supabase(
+      c
+    )
       .from("TeacherClass")
       .select(
         `
@@ -443,7 +450,9 @@ export const getTeacherClasses = async (c: Context) => {
   }
 };
 
-export const getCurrentTeacherClasses = async (c: Context) => {
+export const getCurrentTeacherClasses = async (
+  c: Context<{ Bindings: Env }>
+) => {
   try {
     const userId = getUserIdFromToken(c);
 
@@ -451,7 +460,7 @@ export const getCurrentTeacherClasses = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -461,7 +470,9 @@ export const getCurrentTeacherClasses = async (c: Context) => {
       return c.json({ error: "Teacher not found" }, 404);
     }
 
-    const { data: teacherClasses, error: teacherClassesError } = await supabase
+    const { data: teacherClasses, error: teacherClassesError } = await supabase(
+      c
+    )
       .from("TeacherClass")
       .select(
         `
@@ -480,7 +491,7 @@ export const getCurrentTeacherClasses = async (c: Context) => {
     }
 
     const classes =
-      teacherClasses?.map((tc) => ({
+      teacherClasses?.map((tc: any) => ({
         id: tc.classId,
         name: (tc.class as any)?.name || `Class ${tc.classId}`,
       })) || [];
@@ -492,7 +503,7 @@ export const getCurrentTeacherClasses = async (c: Context) => {
   }
 };
 
-export const editTeacherClass = async (c: Context) => {
+export const editTeacherClass = async (c: Context<{ Bindings: Env }>) => {
   try {
     const { classIds } = await c.req.json();
     const userId = getUserIdFromToken(c);
@@ -501,7 +512,7 @@ export const editTeacherClass = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -511,7 +522,7 @@ export const editTeacherClass = async (c: Context) => {
       return c.json({ error: "Teacher not found" }, 404);
     }
 
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabase(c)
       .from("TeacherClass")
       .delete()
       .eq("teacherId", teacher.id);
@@ -527,7 +538,7 @@ export const editTeacherClass = async (c: Context) => {
         classId: classId,
       }));
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await supabase(c)
         .from("TeacherClass")
         .insert(teacherClassInserts);
 
@@ -544,7 +555,7 @@ export const editTeacherClass = async (c: Context) => {
   }
 };
 
-export const deleteTeacherClass = async (c: Context) => {
+export const deleteTeacherClass = async (c: Context<{ Bindings: Env }>) => {
   try {
     const classId = c.req.param("classId");
     const userId = getUserIdFromToken(c);
@@ -553,7 +564,7 @@ export const deleteTeacherClass = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select("id")
       .eq("userId", userId)
@@ -563,7 +574,7 @@ export const deleteTeacherClass = async (c: Context) => {
       return c.json({ error: "Teacher not found" }, 404);
     }
 
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await supabase(c)
       .from("TeacherClass")
       .delete()
       .eq("teacherId", teacher.id)
@@ -581,7 +592,7 @@ export const deleteTeacherClass = async (c: Context) => {
   }
 };
 
-export const getSchoolClasses = async (c: Context) => {
+export const getSchoolClasses = async (c: Context<{ Bindings: Env }>) => {
   try {
     const userId = getUserIdFromToken(c);
 
@@ -589,10 +600,10 @@ export const getSchoolClasses = async (c: Context) => {
       return c.json({ error: "Unauthorized: Invalid token" }, 401);
     }
 
-    const { data: teacher, error: teacherError } = await supabase
+    const { data: teacher, error: teacherError } = await supabase(c)
       .from("Teacher")
       .select(
-        `
+        ` 
         id,
         schoolId,
         school:School(
@@ -613,7 +624,7 @@ export const getSchoolClasses = async (c: Context) => {
       return c.json({ classes: [], school: null }, 200);
     }
 
-    const { data: schoolClasses, error: schoolClassesError } = await supabase
+    const { data: schoolClasses, error: schoolClassesError } = await supabase(c)
       .from("Class")
       .select("id, name")
       .eq("schoolId", teacher.schoolId)
@@ -624,7 +635,9 @@ export const getSchoolClasses = async (c: Context) => {
       return c.json({ error: "Failed to fetch school classes" }, 500);
     }
 
-    const { data: teacherClasses, error: teacherClassesError } = await supabase
+    const { data: teacherClasses, error: teacherClassesError } = await supabase(
+      c
+    )
       .from("TeacherClass")
       .select("classId")
       .eq("teacherId", teacher.id);
@@ -633,7 +646,7 @@ export const getSchoolClasses = async (c: Context) => {
       console.error("Error fetching teacher classes:", teacherClassesError);
     }
 
-    const assignedClassIds = teacherClasses?.map((tc) => tc.classId) || [];
+    const assignedClassIds = teacherClasses?.map((tc: any) => tc.classId) || [];
 
     return c.json({
       classes: schoolClasses || [],
