@@ -26,6 +26,7 @@ app.use(
     origin: (origin) => {
       const allowedOrigins = [
         "https://journalshe.xyz",
+        "https://www.journalshe.xyz",
         "https://journalshe-client.vercel.app",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
